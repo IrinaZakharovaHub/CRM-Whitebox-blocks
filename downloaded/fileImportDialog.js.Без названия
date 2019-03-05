@@ -1,0 +1,365 @@
+﻿var Rainbow = (function ($, _) {
+
+    var options = {
+        $dialog: null,
+        $infoMessage: null,
+        $errorMessage: null,
+        $grid: null,
+        $file: null,
+        type: null,
+        data: null,
+        urls: {
+            upload: null,
+            refresh: null,
+            remove: null,
+            getData: null
+        },
+        events: {
+            onImport: null
+        },
+        intervalId: null,
+        intervalDisabled: null
+    };
+
+    var destroy = function () {
+        if (options.intervalId) {
+            clearInterval(options.intervalId);
+        }
+        if (options.$dialog.remove) {
+            options.$dialog.remove();
+        }
+        if (options.$xhr) {
+            options.$xhr.abort();
+        }
+    }
+
+    var importSelected = function (fileId) {
+        options.intervalDisabled = true;
+        if (options.type == 1) {
+            if (options.events.onImport) {
+                options.events.onImport(fileId);
+                destroy();
+            }
+        } else {
+            $.ajax({
+                url: options.urls.getData,
+                type: 'POST',
+                dataType: 'json',
+                data: { fileId: fileId, type: options.type, pharmayChainId: options.id },
+                beforeSend: function () {
+                    options.$infoMessage.show();
+                },
+                success: function (data) {
+                    options.$infoMessage.hide();
+                    if (!data.Error && options.events.onImport) {
+                        options.events.onImport(data);
+                        destroy();
+                    }
+                },
+                error: function (xhr) {
+                    options.$infoMessage.hide();
+                    options.$errorMessage.text(xhr.responseText);
+                    options.$errorMessage.show();
+                    options.intervalDisabled = null;
+                }
+            });
+        }
+    }
+
+    var refreshStates = function () {
+        if (options.urls.refresh) {
+            if (!options.intervalDisabled) {
+                $.ajax({
+                    url: options.urls.refresh,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { type: options.type },
+                    success: function (data) {
+                        if (!data.Error) {
+                            options.$grid.pqGrid("option", "dataModel", { data: data.Data });
+                            options.$grid.pqGrid("refreshDataAndView");
+                            return;
+                        }
+                    },
+                    error: function (xhr) {
+                        options.$errorMessage.text('Ошибка при  передаче данных:\r' + xhr.responseText);
+                        options.$errorMessage.show();
+                    }
+                });
+            }
+        } else {
+            destroy();
+        }
+    }
+
+    var remove = function (fileId) {
+        $.ajax({
+            url: options.urls.remove,
+            type: 'POST',
+            dataType: 'json',
+            data: { fileId: fileId },
+            beforeSend: function () {
+                options.$infoMessage.show();
+            },
+            success: function (data) {
+                options.$infoMessage.hide();
+                if (!data.Error) {
+                    refreshStates();
+                }
+            },
+            error: function (xhr) {
+                options.$infoMessage.hide();
+                options.$errorMessage.text(xhr.responseText);
+                options.$errorMessage.show();
+            }
+        });
+    }
+
+    var createDialog = function () {
+        var $dialog = $("<div>");
+        var $infoMessage = $("<div>").css({ "display": "none", "color": "green" }).text("Обработка операции, подождите...").appendTo($dialog);
+        var $errorMessage = $("<div>").css({ "display": "none", "color": "red" }).appendTo($dialog);
+
+        $("<br />").appendTo($dialog);
+        var $file = $("<input>").attr("type", "file").appendTo($dialog);
+        $("<div>").css({ "margin-top": "20px" }).appendTo($dialog);
+        var $grid = $("<div id='gridFileImportDialog'>").text("Загружаются обработанные файлы...").appendTo($dialog);
+
+        $dialog.appendTo($("body"));
+
+        return {
+            $dialog: $dialog,
+            $infoMessage: $infoMessage,
+            $errorMessage: $errorMessage,
+            $file: $file,
+            $grid: $grid
+        };
+    };
+
+    var validateForm = function (container) {
+        container.$errorMessage.hide();
+        var file = container.$file.get(0).files[0];
+        //Проверка наличия файла
+        if (!file) {
+            container.$errorMessage.text("Файл не выбран");
+            container.$errorMessage.show();
+            return false;
+        }
+        //Проверка размера файла
+        var maxSize = 20;
+        if (file.size > maxSize * 1024 * 1024) {
+            container.$errorMessage.text("Размер файла не может превышать " + maxSize + " Мб");
+            container.$errorMessage.show();
+            return false;
+        }
+        //Проверка типа файла и содержимого.
+        var regext = /(\.xlsx)$/i;
+        var regtype = /spreadsheetml/;
+        if (!regext.exec(file.name) || !file.type || !regtype.test(file.type)) {
+            container.$errorMessage.text("Не совсместимое расширение или тип содержимого в файле: " + file.name);
+            container.$errorMessage.show();
+            return false;
+        }
+        return true;
+    }
+
+    var importFile = function () {
+        options.$errorMessage.text("");
+        options.$errorMessage.hide();
+        options.$infoMessage.show();
+
+        var formData = new FormData();
+        var file = options.$file.get(0).files[0];
+        formData.append("file", file);
+        if (options.id) {
+            formData.append("id", options.id);
+        }
+
+        options.$xhr = $.ajax({
+            url: options.urls.upload,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (data) {
+                options.$errorMessage.text("");
+                options.$errorMessage.hide();
+                options.$file.replaceWith(options.$file.val('').clone(true));
+                if (!data || data.Error) {
+                    options.$errorMessage.text(data.ErrorMessage);
+                    options.$errorMessage.show();
+                    setTimeout(function () {
+                        refreshStates();
+                    }, 2);
+                    return;
+                }
+            },
+            beforeSend: function () {
+                Rainbow.spinner.methods.show();
+            },
+            complete: function () {
+                options.$infoMessage.hide();
+                Rainbow.spinner.methods.hide();
+            }
+        });
+    }
+
+    var initGrid = function () {
+        options.$grid.pqGrid({
+            height: 'flex',
+            collapsible: false,
+            showTitle: false,
+            showBottom: false,
+            numberCell: false,
+            wrap: false,
+            hwrap: false,
+            scrollModel: { horizontal: false },
+            selectionModel: { type: 'row', mode: 'single' },
+            colModel: [
+                { dataIndx: "FileId", hidden: true },
+                { title: "Дата, время", width: 110, dataIndx: "DateString", dataType: "date", editable: false },
+                { title: "Наименование файла", width: 506, dataIndx: "Name", editable: false },
+                {
+                    title: "Прогресс, %",
+                    width: 80,
+                    dataIndx: "Progress",
+                    align: "right",
+                    editable: false,
+                    render: function (ui) {
+                        if (!ui.cellData || ui.cellData == "") {
+                            return "в очереди";
+                        } else if (ui.cellData && ui.cellData == "-1") {
+                            return "ошибка";
+                        } else {
+                            return ui.cellData;
+                        }
+                    }
+                }
+            ],
+            dataModel: {
+                dataType: 'json',
+                data: null,
+                location: 'local',
+                sorting: 'local',
+                sortIndx: 'Name',
+                sortDir: 'up',
+                recIndx: "id"
+            },
+            pageModel: {
+                type: "local",
+                rPP: 10,
+                rPPOptions: [10]
+            },
+            rowDblClick: function (event, ui) {
+                var fileId = ui.rowData.FileId;
+                var progress = ui.rowData.Progress;
+                if (progress == "100") {
+                    importSelected(fileId);
+                }else if (progress == "-1") {
+                    options.$errorMessage.text("Обработка завершена с ошибкой. Применение невозможно.");
+                    options.$errorMessage.show();
+                } else {
+                    options.$errorMessage.text("Импорт в процессе обработки. Применение невозможно.");
+                    options.$errorMessage.show();
+                }
+            }
+        });
+
+        var locale = 'ru';
+        options.$grid.pqGrid("option", $.paramquery.pqGrid.regional[locale]);
+        options.$grid.find(".pq-pager").pqPager("option", $.paramquery.pqPager.regional[locale]);
+
+        refreshStates();
+    }
+
+    var showDialog = function (o, id) {
+        options = createDialog();
+        _.assignIn(options, o);
+        options.id = id;
+
+        options.$dialog.dialog({
+            autoOpen: true,
+            modal: true,
+            title: o.title,
+            width: 740,
+            height: 500,
+            resizable: false,
+            bgiframe: true,
+            close: function () {
+                destroy();
+            },
+            buttons:
+            {
+                "Загрузить": function () {
+                    if (validateForm(options)) {
+                        importFile();
+                    }
+                },
+                "Отмена": function () {
+                    destroy();
+                }
+            }
+        });
+
+        $.contextMenu({
+            selector: 'div#gridFileImportDialog > div div div div table tbody tr.pq-grid-row',
+            trigger: 'right',
+            callback: function (key) {
+                options.$errorMessage.text("");
+                options.$errorMessage.hide();
+                var selection = options.$grid.pqGrid("selection", { type: 'row', method: 'getSelection' });
+                if (selection.length == 0) {
+                    options.$errorMessage.text("Не выбрана строка для операции.");
+                    options.$errorMessage.show();
+                    return;
+                }
+                var fileId = selection[0].rowData.FileId;
+                var progress = selection[0].rowData.Progress;
+                switch (key) {
+                    case "select":
+                        if (progress == "100") {
+                            importSelected(fileId);
+                        } else if (progress == "-1") {
+                            options.$errorMessage.text("Импорт завершён с ошибкой. Применение невозможно.");
+                            options.$errorMessage.show();
+                        } else {
+                            options.$errorMessage.text("Импорт в процессе обработки. Применение невозможно.");
+                            options.$errorMessage.show();
+                        }
+                        break;
+                    case "remove":
+                        if (progress == "100" || progress == null || progress == "-1") {
+                            remove(fileId);
+                        } else {
+                            options.$errorMessage.text("Импорт в процессе обработки. Удаление невозможно.");
+                            options.$errorMessage.show();
+                        }
+                        break;
+                    default:
+                }
+            },
+            items: {
+                "select": { name: "Использовать" },
+                "remove": { name: "Удалить" }
+            }
+        });
+
+        initGrid();
+        options.intervalId = setInterval(function () {
+            refreshStates();
+        }, 9000);
+        options.$grid.show();
+    };
+
+    return _.assignIn(Rainbow,
+    {
+        fileImportDialog: {
+            methods: {
+                show: showDialog
+            },
+            events: {
+
+            }
+        }
+    });
+})($, _, Rainbow || {});

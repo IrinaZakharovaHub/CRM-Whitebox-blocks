@@ -1,0 +1,253 @@
+﻿var CompaniesSelectDialog = function ($, _) {
+    var options = {
+        locale: "ru",
+        $form: null,
+        $dialog: null,
+        $grid: null,
+        data: {
+            selectedCompanyIds: [],
+            isAllSelected: false
+        },
+        events: {
+            onSave: null
+        },
+        filter: {
+            $region1: null,
+            $region2: null,
+            $address: null,
+            updateUrl: ''
+        }
+    };
+
+    var initDialog = function() {
+        options.$dialog.dialog({
+            modal: true,
+            autoOpen: false,
+            width: "800px",
+            title: "Добавление аптек",
+            open: function() {
+                options.$grid.pqGrid("option", "dataModel", { data: [] });
+                options.$grid.pqGrid("refreshDataAndView");
+
+                options.$dialog.css("overflow", "hidden"); //this line does the actual hiding
+            },
+            buttons: {
+                "Выбрать": function() {
+                    selectedCompanies();
+                },
+                "Отмена": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+    };
+
+    var initFilters = function () {
+        options.filter.$region1.change(function() {
+
+            options.filter.$region2.empty();
+            $.ajax({
+                url: options.filter.updateUrl,
+                type: "POST",
+                dataType: "json",
+                data: { id: options.filter.$region1.val(), level: 3 },
+                success: function(responseData) {
+                    $.each(responseData.Data,
+                        function() {
+                            options.filter.$region2.append($("<option />").val(this.Value).text(this.Text));
+                        });
+                }
+            });
+        });
+    };
+
+    var initGrid = function () {
+        //инициализируем грид
+        var colM = [
+            {
+                title: "<input type='checkbox' onchange='CompaniesSelectDialog.grid.methods.checkAll(this)'/>", width: '16',
+                editable: false, editor: false, sortable: false, halign:"center", align:"center",
+                type: 'checkbox',
+                cb: {
+                    all: null,
+                    header: true,
+                    check: "YES",
+                    uncheck: "NO"
+                },
+                render: function (ui) {
+                    //проверяем была ли отмечена аптека
+                    var companyId = ui.rowData.Id;
+                    var isChecked = false;
+
+                    if (ui.column.cb.all !== null) {
+                        isChecked = ui.column.cb.all;
+                    } else {
+                        isChecked = options.data.selectedCompanyIds.indexOf(companyId) > -1;
+                    }
+
+                    var template = '<input type="checkbox"' + (isChecked ? 'checked="true"' : '') + ' onchange="CompaniesSelectDialog.grid.methods.checkCompany(this,' + companyId + ')">';
+
+                    return template;
+                }
+            },
+            { title: "ID", dataIndx: "ID", dataType: "integer", hidden: true, editable: false },
+            { title: "Наименование аптеки", width: '300', dataIndx: "Name", dataType: "string", editable: false },
+            { title: "Регион 1-го уровня", width: '200', dataIndx: "AddressRegion1", dataType: "string", editable: false, sortable: false, },
+            { title: "Регион 2-го уровня", width: '200', dataIndx: "AddressRegion2", dataType: "string", editable: false, sortable: false, },
+            { title: "Регион 3-го уровня", width: '200', dataIndx: "AddressRegion3", dataType: "string", editable: false, sortable: false, },
+            { title: "Индекс", width: 100, dataIndx: "AddressIndex", editable: false },
+            { title: "Адрес", width: '200', dataIndx: "AddressFullName", dataType: "string", editable: false, sortable: false, },
+            { title: "Сетевая категория", width: 130, dataIndx: "PharmacyChainCategory", editable: false },
+            { title: "Наименование сети", width: 130, dataIndx: "PharmacyChainName", editable: false }
+        ];
+
+        options.dataModel = {
+            location: 'remote',
+            dataType: 'JSON',
+            method: 'POST',
+            url: options.$form.attr("action"),
+            sorting: "remote",
+            getData: function (response) {
+                if (!response.IsError) {
+                    return {
+                        curPage: response.Data.CurrentPageNumber,
+                        totalRecords: response.Data.TotalCount,
+                        data: response.Data.Items
+                    };
+                }
+
+                return { curPage: 1, totalRecords: 0, data: [] };
+            },
+            beforeSend: function (jqXHR, settings) {
+                settings.data = getFilter(true);
+            },
+            rPPOptions: [5, 10, 15]
+        };
+
+        options.$grid.pqGrid({
+            height: 200,
+            collapsible: false,
+            showTitle: false,
+            selectionModel: { type: "row", mode: "multi" },
+            pasteModel: { on: false },
+            wrap: false,
+            hwrap: false,
+            numberCell: { show: false },
+            title: "",
+            colModel: colM,
+            refresh: function () {
+                options.$grid.pqGrid("option", "dataModel", options.dataModel);
+            },
+            dataModel: { data: [] },
+            pageModel: {
+                type: "remote", rPP: 10, rPPOptions: [5, 10, 15]
+            }
+        });
+
+        var locale = 'ru';
+        options.$grid.pqGrid("option", $.paramquery.pqGrid.regional[locale]);
+        options.$grid.find(".pq-pager").pqPager("option", $.paramquery.pqPager.regional[locale]);
+        $('.pq-grid-cont-inner').css('width', 'auto');
+    };
+
+    var init = function (o) {
+        $.extend(options, o);
+
+        initDialog();
+        initFilters();
+        initGrid();
+    };
+
+    var getFilter = function (withPaging) {
+
+        var data = options.$form.serialize().replace(options.prefix + ".", "");
+
+        if (withPaging) {
+            var pageModel = options.$grid.pqGrid("option", "pageModel");
+
+            data = data + "&PageNumber=" + (pageModel.curPage === 0 ? 1 : pageModel.curPage);
+            data = data + "&PageSize=" + pageModel.rPP;
+
+            var dataModel = options.$grid.pqGrid("option", "dataModel");
+            data = data + "&SortExpression=" + dataModel.sortIndx;
+            data = data + "&SortDirection=" + dataModel.sortDir;
+        }
+
+        return data;
+    };
+
+    var selectedCompanies = function() {
+        var filter = options.data.isAllSelected
+            ? getFilter(false)
+            : $.param({ SelectedCompanyIds: options.data.selectedCompanyIds });
+
+        $.ajax({
+            type: "POST",
+            url: options.$form.attr("action"),
+            data: filter,
+            success: function (response) {
+                if (!response.IsError) {
+                    options.events.onSave(response.Data.Items);
+                    options.$dialog.dialog("close");
+                } else {
+                    Rainbow.notification.methods.error(response.ErrorMessage, "Ошибка!");
+                }
+            }
+        });
+    };
+
+    var showDialog = function (onSaveHandler) {
+        options.data.isAllSelected = false;
+        options.data.selectedCompanyIds = [];
+
+        options.events.onSave = onSaveHandler;
+        options.$dialog.dialog("open");
+    };
+
+    var search = function () {
+        options.$grid.pqGrid("refreshDataAndView");
+    };
+
+    var clearFilter = function () {
+        options.$form.find("select").val(0);
+    };
+
+    var checkAll = function (checkbox) {
+        options.data.selectedCompanyIds = [];
+        options.data.isAllSelected = $(checkbox).prop('checked');
+
+        options.$grid.pqGrid("option", "colModel")[0].cb.all = $(checkbox).prop('checked');
+        options.$grid.pqGrid("refreshColumn", { colIndx: 0 });
+    };
+
+    var checkCompany = function (checkbox, companyId) {
+        var index = options.data.selectedCompanyIds.indexOf(companyId);
+        if ((checkbox == null || $(checkbox).prop('checked') === false) && index > -1) {
+            options.data.selectedCompanyIds.splice(index, 1);
+        }
+        else if ((checkbox == null || $(checkbox).prop('checked') === true) && index === -1) {
+            options.data.selectedCompanyIds.push(companyId);
+        }
+    };
+
+    return {
+        init: init,
+        dialog: {
+            methods: {
+                show: showDialog
+            }
+        },
+        filter: {
+            methods: {
+                apply: search, 
+                clear: clearFilter
+            }
+        },
+        grid: {
+            methods: {
+                checkAll: checkAll,
+                checkCompany: checkCompany
+            }
+        }
+    };
+}($, _);

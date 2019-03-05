@@ -1,0 +1,192 @@
+﻿var SearchBase = function ($, _) {
+
+    var getFilter = function (options) {
+        var data = options.$form.serialize();
+
+        var pageModel = options.grid.$container.pqGrid("option", "pageModel");
+
+        data = data + "&Filter.PageNumber=" + (pageModel.curPage === 0 ? 1 : pageModel.curPage);
+        data = data + "&Filter.PageSize=" + pageModel.rPP;
+
+        var dataModel = options.grid.$container.pqGrid("option", "dataModel");
+        data = data + "&Filter.SortExpression=" + dataModel.sortIndx;
+        data = data + "&Filter.SortDirection=" + dataModel.sortDir;
+
+        return data;
+    };
+
+    var initGrid = function (options) {
+        options.grid.$container.pqGrid({
+            collapsible: false,
+            showTitle: false,
+            selectionModel: { type: "row", mode: "single" },
+            rowDblClick: function (event, ui) {
+                if (options.editUrl != null) {
+                    window.location = options.editUrl + ui.rowData.Id;
+                }
+            },
+            pasteModel: { on: false },
+            wrap: false,
+            hwrap: false,
+            numberCell: { show: false },
+            title: "",
+            pageModel: options.grid.pageModel == null ? {
+                type: "remote",
+                rPPOptions: [10, 25, 50, 100]
+            } : options.grid.pageModel,
+            colModel: options.grid.columnModel,
+            dataModel: {
+                url: options.$form.attr("action"),
+                location: "remote",
+                method: "POST",
+                sorting: "remote",
+                sortIndx: options.grid.sortIndx,
+                sortDir: "up",
+                getData: function (response) {
+                    if (!response.IsError) {
+                        if (response.Data.AdditionalInfo && options.grid.onBindAction) {
+                            options.grid.onBindAction(response.Data.AdditionalInfo);
+                        }
+                        return { curPage: response.Data.CurrentPageNumber, totalRecords: response.Data.TotalCount, data: response.Data.Items };
+                    }
+
+                    return { curPage: 1, totalRecords: 0, data: [] };
+                },
+                beforeSend: function (jqXHR, settings) {
+                    settings.data = getFilter(options);
+                },
+                rPPOptions: [10, 25, 50, 100]
+            }
+        });
+
+        var pqScrollbar = options.grid.$container.find("div.pq-sb-vert").pqScrollBar();
+        if (pqScrollbar.length == 1)
+            pqScrollbar.on("pqscrollbardrag", function (event, ui) {
+                var num = $(this).pqScrollBar("option", "num_eles");
+                var step = num === 0 ? 50 : -50;
+                var ratio = step * (ui.ratio == 0 ? 1 : (ui.ratio == 1 ? -1 : 0));
+                window.scrollBy(0, ratio);
+            });
+
+        var locale = 'ru';
+        options.grid.$container.pqGrid("option", $.paramquery.pqGrid.regional[locale]);
+        options.grid.$container.find(".pq-pager").pqPager("option", $.paramquery.pqPager.regional[locale]);
+    };
+
+    var toggleFilterAction = function ($action, $filter) {
+        if ($filter.is(":visible")) {
+            $action.find("span").text("Показать фильтр");
+            $filter.hide();
+        } else {
+            $action.find("span").text("Скрыть фильтр");
+            $filter.show();
+        }
+    };
+
+    var columnVisibilityAction = function ($grid) {
+        var colModel = $grid.pqGrid("option", "colModel");
+
+        var modTable = $("<table>");
+        $.each(colModel,
+            function (index, item) {
+                if (item.title !== "") {
+                    var label = $("<label>").append(
+                        $("<input>")
+                            .attr("type", "checkbox")
+                            .attr("name", item.dataIndx)
+                            .attr("style", "margin-right: 8px")
+                            .prop("checked", item.hidden !== true)
+                    ).append(item.title).attr("style", "cursor: pointer");
+                    modTable.append($("<tr>").append($("<td>").append(label)));
+                }
+            });
+
+        var modal = $("<div>").attr("id", "dialogShowColumnsTable").append(modTable);
+
+        modal.dialog({
+            autoOpen: true,
+            modal: true,
+            title: 'Настройка отображения колонок',
+            width: 450,
+            height: 550,
+            bgiframe: true,
+            resizable: false,
+            close: function (event, ui) {
+                $(this).dialog("destroy").remove();
+            },
+            buttons: {
+                "Ок": function () {
+                    var colModel = $grid.pqGrid("option", "colModel");
+                    $.each(colModel,
+                        function (index, item) {
+                            if (item.title !== "") {
+                                item.hidden = modal.find("input[type=checkbox][name='" + item.dataIndx + "']:checked").length === 0;
+                            }
+                        });
+
+                    $grid.pqGrid("option", "colModel", colModel);
+                    $grid.pqGrid("refresh");
+
+                    $(this).dialog("close");
+                },
+                "Отмена": function () {
+                    $(this).dialog("close");
+                }
+            }
+        });
+    };
+
+    var initTasks = function (options) {
+        options.$tasks.find("a:not([data-action=''])")
+            .click(function () {
+                var action = $(this).attr("data-action");
+                if (action === "toggleFilter") {
+                    toggleFilterAction($(this), options.$form.find(".filter"));
+                } else if (action === "columnVisibility") {
+                    columnVisibilityAction(options.grid.$container);
+                } else {
+                    options.processTask(action, options);
+                }
+            });
+    };
+
+    var create = function (options) {
+
+        var search = function () {
+            options.grid.$container.pqGrid("refreshDataAndView");
+        };
+
+        var getVisibleColumns = function () {
+            var columnModel = options.grid.$container.pqGrid("getColModel");
+            var columns = _.filter(columnModel, function (o) { return !o.hidden; });
+            columns = _.transform(columns,
+                function (result, o) {
+                    result.push(o.dataIndx);
+                }, []);
+
+            return columns;
+        };
+
+        options.$form.submit(function (event) {
+            /* stop form from submitting normally */
+            event.preventDefault();
+
+            search();
+        });
+
+        initGrid(options);
+        initTasks(options);
+
+        return {
+            search: search,
+            getFilter: function () {
+                return getFilter(options);
+            },
+            getVisibleColumns: getVisibleColumns
+        };
+    };
+
+    return {
+        create: create
+    };
+}($, _);

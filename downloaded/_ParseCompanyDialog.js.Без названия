@@ -1,0 +1,372 @@
+﻿var ParseCompanyDialog = function ($) {
+
+    var options = {
+        //UI элементы
+        $dialog: null,
+        $notParsedCompanyName: null,
+        $fullCompany: null,
+        $companyName: null,
+        $pharmacyChainCategory: null,
+        $pharmacyChainName: null,
+        $region1: null,
+        $region2: null,
+        $region3: null,
+        $address: null,
+        $index: null,
+        $pharmacyBrand: null,
+
+        //Данные из основной страницы с распознанными/нераспознанными компаниями
+        list: {
+            lists: '',
+            parsed: {
+                $grid: null,
+                data: ''
+            },
+            notParsed: {
+                $grid: null,
+                data: ''
+            }
+        },
+        //Не распознанная строка, которую пытаемся корректировать
+        notParsedLine: null,
+        //Функция обновления грида по его Id
+        refreshGridFunction: null,
+        ddlUrls: {
+            getCompany: null,
+            getCompanyName: null,
+            getCategory: null,
+            getPharmacyChain: null,
+            getPharmacyBrand: null
+        },
+        findCompaniesUrl: null,
+        getCompany: null,
+        getCompaniesByPharmacyChainIdUrl: null,
+        modified: null,
+        pharmacyChainMain: null,
+        addExperience: null
+    };
+
+    var loadDropDownList = function ($ddl, url, requestData) {
+        //Очищаем DDL от предыдущих значений
+        $ddl.empty();
+        //Подгружаем необходимые значения
+        $.ajax({
+            url: url,
+            dataType: 'json',
+            data: requestData,
+            success: function (responseData) {
+                $.each(responseData,
+                    function () {
+                        $ddl.append($("<option />").val(this.Value).text(this.Text));
+                    });
+            }
+        });
+    };
+
+    var getDescriptionUnParsedData = function (notParsedLine) {
+        if (!!notParsedLine == false) {
+            return '';
+        }
+
+        var resDescription = [];
+        resDescription[resDescription.length] = notParsedLine.PharmacyName;
+        resDescription[resDescription.length] = notParsedLine.AddressFullName;
+        resDescription[resDescription.length] = notParsedLine.Category;
+        resDescription[resDescription.length] = notParsedLine.BrandName;
+
+        resDescription = resDescription.filter(function (value) {
+            return !!value;
+        });
+
+        resDescription = resDescription.join(',');
+        return resDescription;
+    };
+
+    var openDialog = function (notParsedLine, refreshGridFunction) {
+        options.notParsedLine = notParsedLine;
+        options.refreshGridFunction = refreshGridFunction;
+        options.$dialog.dialog("open");
+        options.$notParsedCompanyName.text(getDescriptionUnParsedData(notParsedLine));
+
+        //дизейблим поля, которые были распознаны
+        if (notParsedLine.CompanyId != null && notParsedLine.CompanyId > 0) {
+            options.$companyName.prop('disabled', true);
+
+        } else {
+            options.$companyName.prop('disabled', false);
+        }
+
+        if (notParsedLine.CompanyId != null && notParsedLine.CompanyId > 0) {
+            options.$pharmacyChainCategory.prop('disabled', true);
+
+        } else {
+            options.$pharmacyChainCategory.prop('disabled', false);
+        }
+
+        if (notParsedLine.PharmacyChainId != null && notParsedLine.PharmacyChainId > 0) {
+            options.$pharmacyChainName.prop('disabled', true);
+
+        } else {
+            options.$pharmacyChainName.prop('disabled', false);
+        }
+
+        //подгружаем значения для каждого выпадающего списка
+        loadDropDownList(options.$fullCompany, options.ddlUrls.getCompany, notParsedLine);
+        //loadDropDownList(options.$companyName, options.ddlUrls.getCompanyName, notParsedLine);
+        //loadDropDownList(options.$pharmacyChainCategory, options.ddlUrls.getCategory, notParsedLine);
+        //loadDropDownList(options.$pharmacyChainName, options.ddlUrls.getPharmacyChain, notParsedLine);
+        //loadDropDownList(options.$pharmacyBrand, options.ddlUrls.getPharmacyBrand, notParsedLine);
+    };
+
+
+    var closeDialog = function () {
+        options.$dialog.dialog("close");
+    };
+
+    var getCompany = function (companyId, success) {
+
+        $.ajax({
+            url: options.getCompany,
+            dataType: 'json',
+            data: { id: companyId },
+            success: function (data) {
+                success(data);
+            }
+        });
+    };
+
+    var doApply = function (data) {
+        //Вычисляем все нераспознанные строки соответствующие всем параметрам исходной (редактируемой)
+        var sourceItems = _.filter(options.list.notParsed.data, function (item) {
+            return item.AddressFullName.replace(/\s/g, '') === options.notParsedLine.AddressFullName.replace(/\s/g, '') &&
+                item.BrandName === options.notParsedLine.BrandName &&
+                item.Category === options.notParsedLine.Category &&
+                item.PharmacyName === options.notParsedLine.PharmacyName;
+        });
+
+        //Переносим элементы из нераспознанных в распознанные
+        sourceItems.forEach(function (item) {
+            var row = Object.assign({}, data);
+            row.ListNumber = item.ListNumber;
+            row.Category = item.Category;
+            row.BrandName = item.BrandName;
+            row.Guid = item.Guid;
+            //Заносим нераспознанные строки в списки распознанных
+            options.list.parsed.data.push(row);
+            //Удаляем строки из грида не распознанных аптек
+            _.remove(options.list.notParsed.data,
+            function (item) {
+                return item.Guid === row.Guid;
+            });
+        });
+
+        options.refreshGridFunction(options.list.parsed.$grid.attr('id'));
+
+        var notParsedGrid = options.list.notParsed.$grid.attr('id');
+
+        options.refreshGridFunction(notParsedGrid);
+
+        //Фокусируем следующую строку
+        var rowIndx = options.notParsedLine.rowIndx;
+        options.list.notParsed.$grid.pqGrid("setSelection", { rowIndxPage: rowIndx, focus: true });
+
+        if (options.modified) {
+            options.modified();
+        }
+
+        //Добавляем исправление в опыт исправлений для последующих импортов
+        if (options.addExperience) {
+            var exp = {
+                PharmacyName: options.notParsedLine.PharmacyName,
+                Address: options.notParsedLine.AddressFullName,
+                CompanyId: data.CompanyId
+            };
+            options.addExperience(exp);
+        }
+    };
+
+    var apply = function () {
+        var companyId = options.$fullCompany.val();
+        if (companyId != null && companyId > 0) {
+            getCompany(companyId,
+                function success(data) {
+                    if (options.pharmacyChainMain && data.PharmacyChainId && data.PharmacyChainId != options.pharmacyChainMain) {
+                        Rainbow.confirmation.methods.show("Аптека " +
+                            data.PharmacyName +
+                            " принадлежит сети " +
+                            data.PharmacyChainName +
+                            ", подтвердите перенос в текущую сеть.",
+                            "Перенос аптеки из другой АС",
+                            function () { doApply(data); });
+                    } else {
+                        doApply(data);
+                    }
+                    closeDialog();
+                });
+        };
+    };
+
+    var getParamForSearch = function (ddl) {
+        var searchElement = (ddl.val() != 0 && !!ddl.children(':selected').text())
+            ? ddl.children(':selected').text()
+            : '';
+        return searchElement;
+    };
+
+    var pharmacyChainRenew = function (pharmacyChainId) {
+        options.pharmacyChainMain = pharmacyChainId;
+    };
+
+    var applyAll = function () {
+        if (options.$companyName.val() == 0) {
+            closeDialog();
+        }
+
+        var inputData = {};
+        inputData.BrandNameSearch = getParamForSearch(options.$pharmacyBrand);
+        inputData.PharmacyNameSearch = getParamForSearch(options.$companyName);
+        inputData.CategoryNameSearch = getParamForSearch(options.$pharmacyChainCategory);
+
+        var searchPropsIsValid = false;
+        for (var key in inputData) {
+            if (inputData.hasOwnProperty(key) && !!inputData[key]) {
+                searchPropsIsValid = true;
+                break;
+            }
+        }
+
+        if (!searchPropsIsValid) {
+            return;
+        }
+
+        getCompanySearch(inputData,
+            options.list.notParsed.data,
+            function (dataResults) {
+
+                if (!!dataResults == false) {
+                    return;
+                }
+
+                var parsedData = dataResults.filter(function (x) { return !!x.CompanyId; });
+                var notParsedData = dataResults.filter(function (x) { return !!x.CompanyId == false; });
+
+                if (parsedData.length == 0) {
+                    return;
+                }
+
+                $.each(parsedData,
+                    function (index, el) {
+                        el.ListNumber = options.list.parsed.getCurrentListNumber();
+                        options.list.parsed.data.push(el);
+                    });
+
+                _.remove(options.list.notParsed.data, function () { return true; });
+
+                _List.addDataToGrid(options.list.notParsed, notParsedData);
+
+                options.refreshGridFunction(options.list.parsed.$grid.attr('id'));
+                options.refreshGridFunction(options.list.notParsed.$grid.attr('id'));
+            });
+
+        //5. Удаляем эти аптеки из грида нераспознанных
+        //6. Обновляем все гриды
+        options.refreshGridFunction(options.list.parsed.$grid.attr('id'));
+        options.refreshGridFunction(options.list.notParsed.$grid.attr('id'));
+
+        if (options.modified) {
+            options.modified();
+        }
+        closeDialog();
+    };
+
+    var getCompanySearch = function (inputData, listItemModelSearches, success) {
+        var data = $.param({
+            ListItemModelSearches: listItemModelSearches,
+            BrandNameSearch: inputData.BrandNameSearch,
+            PharmacyNameSearch: inputData.PharmacyNameSearch,
+            CategoryNameSearch: inputData.CategoryNameSearch,
+        });
+
+        $.ajax({
+            type: 'POST',
+            url: options.findCompaniesUrl,
+            dataType: 'json',
+            data: data,
+            success: function (dataResults) {
+                success(dataResults);
+            }
+        });
+    };
+
+    var init = function (o) {
+        $.extend(options, o);
+
+        //скрываем поля адрес, до тех пор пока они не будут реализованы
+        $(options.$region1.parents()[1]).hide();
+        $(options.$region2.parents()[1]).hide();
+        $(options.$region3.parents()[1]).hide();
+        $(options.$address.parents()[1]).hide();
+        $(options.$index.parents()[1]).hide();
+        $(options.$pharmacyChainName.parents()[1]).hide();
+
+        options.$dialog.dialog({
+            modal: true,
+            autoOpen: false,
+            height: 'auto',
+            width: 1000,
+            title: 'Редактирование нераспознанных аптек'
+        });
+    };
+
+    var addPharmacyForPharmacyChain = function (pharmacyChainIds) {
+        $.ajax({
+            type: 'POST',
+            url: options.getCompaniesByPharmacyChainIdUrl,
+            dataType: 'json',
+            data: { 'pharmacyChainIds': pharmacyChainIds },
+            success: function (dataResults) {
+                if (!!dataResults) {
+                    $.each(dataResults,
+                        function (index, el) {
+                            el.ListNumber = options.list.parsed.getCurrentListNumber();
+                            options.list.parsed.data.push(el);
+                        });
+                    _List.refreshByGridId(options.list.parsed.$grid.attr('id'));
+                    if (options.modified) {
+                        options.modified();
+                    }
+                }
+            }
+        });
+    };
+
+    var deletePharmacyForPharmacyChainName = function (pharmacyChainName) {
+        if (!!pharmacyChainName) {
+            _.remove(options.list.parsed.data,
+                function (item) {
+                    return !!item.PharmacyChainName && item.PharmacyChainName === pharmacyChainName;
+                });
+
+            _List.refreshByGridId(options.list.parsed.$grid.attr('id'));
+            if (options.modified) {
+                options.modified();
+            }
+        }
+    };
+
+    return {
+        init: init,
+        events: {
+            apply: apply,
+            applyAll: applyAll,
+
+            openDialog: openDialog,
+            closeDialog: closeDialog,
+            addPharmacyForPharmacyChain: addPharmacyForPharmacyChain,
+            deletePharmacyForPharmacyChainName: deletePharmacyForPharmacyChainName
+        },
+        methods: {
+            pharmacyChainRenew: pharmacyChainRenew
+        }
+    };
+}($);

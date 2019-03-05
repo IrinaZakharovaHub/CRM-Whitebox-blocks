@@ -1,0 +1,39 @@
+﻿(function ($) {
+    $.validator.unobtrusive.adapters.add("lessthandate",
+        ["other"],
+        function (options) {
+            var getModelPrefix = function (fieldName) {
+                return fieldName.substr(0, fieldName.lastIndexOf(".") + 1);
+            };
+
+            var appendModelPrefix = function (value, prefix) {
+                if (value.indexOf("*.") === 0) {
+                    value = value.replace("*.", prefix);
+                }
+                return value;
+            };
+            var prefix = getModelPrefix(options.element.name),
+                other = options.params.other,
+                fullOtherName = appendModelPrefix(other, prefix),
+                element = $(options.form)
+                    .find(":input[name='" +
+                        fullOtherName +
+                        "']")[0];
+
+            options.rules["lessthandate"] = element;
+            if (options.message != null) {
+                options.messages["lessthandate"] = options.message;
+            }
+        });
+
+    $.validator.addMethod("lessthandate",
+        function (value, element, params) {
+            var date = Globalize.parseDate(value);
+            var dateToCompareAgainst = Globalize.parseDate($(params).val());
+
+            if (isNaN(date.getTime()) || isNaN(dateToCompareAgainst.getTime())) {
+                return true;
+            }
+            return date < dateToCompareAgainst;
+        });
+})(jQuery);

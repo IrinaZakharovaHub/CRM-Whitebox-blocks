@@ -1,0 +1,35 @@
+﻿var Rainbow = (function ($, _) {
+
+    var showConfirmation = function (message, title, action) {
+        var $dialog = $("<div>");
+        $("<span>").text(message).appendTo($dialog);
+
+        $dialog.dialog({
+            title: title,
+            modal: true,
+            resizable: false,
+            buttons: {
+                "Да": function () {
+                    action();
+                    $(this).dialog("close");
+                },
+                "Отмена": function() {
+                    $(this).dialog("close");
+                }
+            },
+            close: function () {
+                $(this).dialog("destroy");
+            }
+        });
+    };
+
+
+    return _.assignIn(Rainbow,
+    {
+        confirmation: {
+            methods: {
+                show: showConfirmation
+            }
+        }
+    });
+})($, _, Rainbow || {});

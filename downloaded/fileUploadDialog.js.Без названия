@@ -1,0 +1,163 @@
+﻿var Rainbow = (function ($, _) {
+
+    var createDialog = function () {
+        var $dialog = $("<div>");
+        var $infoMessage = $("<div>").css({ "display": "none", "color": "green" }).text("Данные сохраняются на сервере, подождите...").appendTo($dialog);
+        var $errorMessage = $("<div>").css({ "display": "none", "color": "red" }).appendTo($dialog);
+
+        $("<br>").appendTo($dialog);
+        var $file = $("<input>").attr("type", "file").appendTo($dialog);
+        $dialog.appendTo($("body"));
+
+        return {
+            $dialog: $dialog,
+            $infoMessage: $infoMessage,
+            $errorMessage: $errorMessage,
+            $file: $file
+        };
+    };
+
+    var validateForm = function (container) {
+        container.$errorMessage.hide();
+        var file = container.$file.get(0).files[0];
+        //Проверка наличия файла
+        if (!file) {
+            container.$errorMessage.text("Файл не выбран");
+            container.$errorMessage.show();
+            return false;
+        }
+        //Проверка размера файла
+        var maxSize = 20;
+        if (file.size > maxSize * 1024 * 1024) {
+            container.$errorMessage.text("Размер файла не может превышать " + maxSize + " Мб");
+            container.$errorMessage.show();
+            return false;
+        }
+        //Проверка типа файла и содержимого.
+        var regext = /(\.xlsx)$/i;
+        var regtype = /spreadsheetml/;
+        if (!regext.exec(file.name) || !file.type || !regtype.test(file.type)) {
+            container.$errorMessage.text("Не совсместимое расширение или тип содержимого в файле: " + file.name);
+            container.$errorMessage.show();
+            return false;
+        }
+        return true;
+    }
+
+    //var postSessionAlive = function ($xhr, keepUrl) {
+    //    setTimeout(function () {
+    //        if ($xhr.readyState === 1) {
+    //            $.get(keepUrl,
+    //                null,
+    //                function (data) {
+    //                    console.log("-- session keeping request success --");
+    //                    postSessionAlive($xhr, keepUrl);
+    //                },
+    //                "json");
+    //        }
+    //    }, 50000);
+    //}
+   
+    var createHeartbeatFrame = function (keepUrl) {
+        var iframe = document.createElement('iframe');
+        var url = document.location.origin + keepUrl;
+        var html = '<head><META HTTP-EQUIV="Refresh" CONTENT="30; URL=' + url + '"></head><body></body>';
+        iframe.src = 'data:text/html;charset=utf-8,' + encodeURI(html);
+        document.body.appendChild(iframe);
+        console.log('iframe.contentWindow =', iframe.contentWindow);
+    }
+
+    var uploadFile = function (container) {
+        container.$infoMessage.show();
+
+        var formData = new FormData();
+        var file = container.$file.get(0).files[0];
+        formData.append("file", file);
+        if (container.id) {
+            formData.append("id", container.id);
+        }
+
+        container.$xhr = $.ajax({
+            url: container.urls.upload,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (data) {
+                if (!data || data.Error) {
+                    container.$errorMessage.text(data.ErrorMessage);
+                    container.$errorMessage.show();
+                    return;
+                }
+                container.$errorMessage.hide();
+
+                if (container.events.onSuccess) {
+                    container.events.onSuccess(data);
+                }
+
+                container.$dialog.dialog("close");
+            },
+            beforeSend: function () {
+                Rainbow.spinner.methods.show();
+            },
+            complete: function () {
+                Rainbow.spinner.methods.hide();
+            }
+        });
+
+        createHeartbeatFrame(container.urls.keepUrl);
+        //if (container.$xhr.readyState === 1 && container.urls.keepUrl) {
+        //    postSessionAlive(container.$xhr, container.urls.keepUrl);
+        //}
+    }
+
+    var showDialog = function (o, id) {
+        var container = createDialog();
+        _.assignIn(container, o);
+        container.id = id;
+
+        container.$dialog.dialog({
+            autoOpen: true,
+            modal: true,
+            title: o.title,
+            width: 530,
+            height: 220,
+            resizable: false,
+            // fix IE6
+            bgiframe: true,
+            close: function () {
+                if (container.$xhr) {
+                    container.$xhr.abort();
+                }
+                $(this).dialog("destroy");
+                container.$dialog.remove();
+            },
+            buttons:
+            {
+                "Загрузить": function () {
+                    if (validateForm(container)) {
+                        uploadFile(container);
+                    }
+                },
+                "Отмена": function () {
+                    if (container.$xhr) {
+                        container.$xhr.abort();
+                    }
+                    $(this).dialog("close");
+                }
+            }
+        });
+    };
+
+    return _.assignIn(Rainbow,
+    {
+        fileUploadDialog: {
+            methods: {
+                show: showDialog
+            },
+            evets: {
+
+            }
+        }
+    });
+})($, _, Rainbow || {});

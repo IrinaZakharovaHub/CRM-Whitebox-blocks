@@ -1,0 +1,35 @@
+﻿function getSelectionFromMultiselect(control, invert) {
+    var typeIds = control.val();
+    if (typeIds)
+        return typeIds.toString();
+    return invert ? getAllFromMultiselect(control) : '';
+}
+
+function getAllFromMultiselect(control) {
+    var result = '';
+    $('#' + control.prop('id') + ' option').each(function (index, option) {
+        result += option.value + ',';
+    });
+    return result;
+}
+
+function setSelectionToMultiselect(control, selection) {
+    if (selection) {
+        var selectedOptions = selection.split(",");
+        for (var i in selectedOptions) {
+            var optionVal = selectedOptions[i];
+            var option = control.find("option[value=" + optionVal + "]");
+            if (option)
+                option.prop("selected", "selected");
+        }
+    }
+    control.multiselect("refresh");
+}
+
+function setValuesToMultiselect(control, list) {
+    control.empty();
+    $.each(list, function () {
+        control.append($("<option />").val(this.Id).text(this.Name));
+    });
+    control.multiselect("refresh");
+}

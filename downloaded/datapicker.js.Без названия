@@ -1,0 +1,83 @@
+﻿var Rainbow = (function ($, _) {
+
+    var ie = !!window.MSInputMethodContext && !!document.documentMode;;
+    var initDataPicker = function () {
+        $(".date-picker")
+            .datepicker({
+                fixFocusIE: false,
+                beforeShow: function (input, inst) {
+                    inst.dpDiv.addClass("js-show");
+                    var result = ie ? !this.fixFocusIE : true;
+                    this.fixFocusIE = false;
+                    return result;
+                },
+                closeText: "Выбрать",
+                changeMonth: true,
+                changeYear: true,
+                showButtonPanel: true,
+                onClose: function (dateText, inst) {
+                    function isDonePressed() {
+                        return ($("#ui-datepicker-div")
+                            .html()
+                            .indexOf("ui-datepicker-close ui-state-default ui-priority-primary ui-corner-all ui-state-hover") >
+                            -1);
+                    }
+                    
+                    if (isDonePressed()) {
+                        var month = $("#ui-datepicker-div .ui-datepicker-month :selected").val();
+                        var year = $("#ui-datepicker-div .ui-datepicker-year :selected").val();
+                        var date = $("#ui-datepicker-div .ui-datepicker-date :selected").val();
+                        $(this).datepicker("setDate", new Date(year, month, date)).trigger("change");
+
+                        $(".date-picker").focusout();
+                    }
+
+                    inst.dpDiv.removeClass("js-show");
+                    if (!ie) {
+                        setTimeout(function () {
+                            if (!inst.dpDiv.hasClass("js-show")) {
+                                inst.dpDiv.removeClass("date-picker-monthYear");
+                            }
+                        }, 200);
+                    }
+
+                    this.fixFocusIE = true;
+                    this.focus();
+                },
+                onSelect: function (dateText, inst) {
+                    this.fixFocusIE = true;
+                    $(this).change().focus();
+                }
+            }).click(function () { $(this).focus() });;
+
+        $(".date-picker")
+            .each(function (index, item) {
+                var fillDirtyDate = function ($datePicker) {
+                    var datePickerId = $datePicker.attr("id");
+                    $datePicker.val($("#" + datePickerId + "String").val());
+                };
+
+                var currentDate = $(item).datepicker("getDate");
+                if (Object.prototype.toString.call(currentDate) === "[object Date]") {
+                    if (!isNaN(currentDate.getTime())) {
+                        $(this).datepicker("setDate", new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()));
+                    } else {
+                        fillDirtyDate($(item));
+                    }
+                } else {
+                    fillDirtyDate($(item));
+                }
+            });
+
+    };
+
+
+    return _.assignIn(Rainbow, {
+        datapicker: {
+            methods: {
+                init: initDataPicker
+            }
+        }
+    });
+})($, _, Rainbow || {});
+

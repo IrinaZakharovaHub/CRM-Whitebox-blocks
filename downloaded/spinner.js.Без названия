@@ -1,0 +1,31 @@
+﻿var Rainbow = (function($, _) {
+
+    return _.assignIn(Rainbow,
+    {
+        spinner: {
+            methods: {
+                initAjax: function() {
+                    $(document)
+                        .ajaxStart(function() {
+                            var body = $("body");
+                            body.addClass("loading");
+                        })
+                        .ajaxStop(function() {
+                            var body = $("body");
+                            body.removeClass("loading");
+                        })
+                        .ajaxError(function() {
+                            var body = $("body");
+                            body.removeClass("loading");
+                        });
+                },
+                show: function() {
+                    $("body").addClass("loading");
+                },
+                hide: function() {
+                    $("body").removeClass("loading");
+                }
+            }
+        }
+    });
+})($, _, Rainbow || {});

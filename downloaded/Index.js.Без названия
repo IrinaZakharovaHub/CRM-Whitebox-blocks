@@ -1,0 +1,253 @@
+﻿var PendingReportIndex = function ($) {
+    var options = {
+        $form: null,
+        $tasks: null,
+        ddls: {
+            $ddlSlms: null,
+            $ddlFlms: null,
+            $ddlTeams: null,
+            $ddlMrs: null,
+            $ddlPcs: null,
+            $ddlBrands: null,
+            $ddlSkus: null,
+            $ddlRegion1: null,
+            $ddlRegion2: null,
+            $ddlRegion3: null,
+            updateUrl: '',
+            updateRegionUrl: '',
+            resetUrl: ''
+        },
+        $periodFrom: null,
+        $periodTo: null,
+        grid: {
+            $container: null,
+            columnModel: [],
+            pageModel: null
+        },
+        processTask: function (action, options) { },
+        editUrl: ''
+    };
+
+    var exportToExcel = function () {
+        var filter = options.searchBase.getFilter();
+
+        var columnsData = $.param({
+            Columns: options.searchBase.getVisibleColumns()
+        });
+
+        var data = filter + "&" + columnsData;
+
+        $.fileDownload(options.exportUrl, {
+            httpMethod: "POST",
+            prepareCallback: function (url) {
+                Rainbow.spinner.methods.show();
+            },
+            successCallback: function () {
+                Rainbow.spinner.methods.hide();
+            },
+            abortCallback: function () {
+                Rainbow.spinner.methods.hide();
+            },
+            failCallback: function () {
+                Rainbow.spinner.methods.hide();
+
+                Rainbow.notification.methods.error("Ошибка экспорта данных отчёта!", "Ошибка выгрузки");
+            },
+            data: data
+        });
+    };
+
+    var init = function (o, searchBase) {
+        $.extend(options, o);
+
+        options.$form.find("select[multiple]").multiselect({ selectedList: 3 });
+        options.$form.find(".ui-multiselect").css("width", "100%");
+
+        options.searchBase = searchBase.create(options);
+        Rainbow.spinner.methods.initAjax();
+        Rainbow.datapicker.methods.init();
+
+        var updateDlls = function (that, level) {
+            $.ajax({
+                url: options.ddls.updateUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    level: level,
+                    levelIds: getSelectionFromMultiselect(that, true),
+                    flmIds: getSelectionFromMultiselect(options.ddls.$ddlFlms, true)
+                },
+                success: function (response) {
+                    if (!response.IsError) {
+                        if (response.Data.flms) {
+                            setValuesToMultiselect(options.ddls.$ddlFlms, response.Data.flms);
+                        }
+                        if (response.Data.teams) {
+                            setValuesToMultiselect(options.ddls.$ddlTeams, response.Data.teams);
+                        }
+                        if (response.Data.mrs) {
+                            setValuesToMultiselect(options.ddls.$ddlMrs, response.Data.mrs);
+                        }
+                        if (response.Data.pcs) {
+                            setValuesToMultiselect(options.ddls.$ddlPcs, response.Data.pcs);
+                        }
+                        if (response.Data.brands) {
+                            setValuesToMultiselect(options.ddls.$ddlBrands, response.Data.brands);
+                        }
+                        if (response.Data.skus) {
+                            setValuesToMultiselect(options.ddls.$ddlSkus, response.Data.skus);
+                        }
+                        $("button.ui-multiselect").width('94%');
+                    } else {
+                        Rainbow.notification.methods.error(response.ErrorMessage, "Ошибка!");
+                    }
+                }
+            }).error(function (ex) {
+                Rainbow.notification.methods.error(ex.statusText, "Ошибка!");
+            });
+        }
+
+        var fillControl = function (control, data) {
+            control.empty();
+            $.each(data,
+                function () {
+                    control.append($("<option />").val(this.Value).text(this.Text));
+                });
+        }
+
+        var resetDlls = function () {
+            $.ajax({
+                url: options.ddls.resetUrl,
+                type: 'POST',
+                dataType: 'json',
+                success: function (response) {
+                    if (!response.IsError) {
+                        if (response.Data.flms) {
+                            setValuesToMultiselect(options.ddls.$ddlFlms, response.Data.flms);
+                        }
+                        if (response.Data.slms) {
+                            setValuesToMultiselect(options.ddls.$ddlSlms, response.Data.slms);
+                        }
+                        if (response.Data.teams) {
+                            setValuesToMultiselect(options.ddls.$ddlTeams, response.Data.teams);
+                        }
+                        if (response.Data.mrs) {
+                            setValuesToMultiselect(options.ddls.$ddlMrs, response.Data.mrs);
+                        }
+                        if (response.Data.pcs) {
+                            setValuesToMultiselect(options.ddls.$ddlPcs, response.Data.pcs);
+                        }
+                        if (response.Data.brands) {
+                            setValuesToMultiselect(options.ddls.$ddlBrands, response.Data.brands);
+                        }
+                        if (response.Data.skus) {
+                            setValuesToMultiselect(options.ddls.$ddlSkus, response.Data.skus);
+                        }
+                        if (response.Data.regions1) {
+                            fillControl(options.ddls.$ddlRegion1, response.Data.regions1);
+                        }
+                        if (response.Data.regions2) {
+                            fillControl(options.ddls.$ddlRegion2, response.Data.regions2);
+                        }
+                        if (response.Data.regions3) {
+                            fillControl(options.ddls.$ddlRegion3, response.Data.regions3);
+                        }
+                        $("button.ui-multiselect").width('94%');
+                    } else {
+                        Rainbow.notification.methods.error(response.ErrorMessage, "Ошибка!");
+                    }
+                }
+            }).error(function (ex) {
+                Rainbow.notification.methods.error(ex.statusText, "Ошибка!");
+            });
+        }
+
+        var updateChildRegions = function (parentValue, childControl, level, upControl, upLevel) {
+            $.ajax({
+                url: options.ddls.updateRegionUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: { id: parentValue, level: level, upLevel: upLevel },
+                success: function (responseData) {
+                    fillControl(childControl, responseData.Data.Data);
+                    if (upControl && upLevel && responseData.Data.UpData) {
+                        fillControl(upControl, responseData.Data.UpData);
+                    }
+                }
+            }).error(function (ex) {
+                Rainbow.notification.methods.error(ex.statusText, "Ошибка!");
+            });
+        }
+
+        options.processTask = function (action, options) {
+            if (action === "clearFilter") {
+                var dt = new Date();
+
+                var dateSetFrom = new Date(dt.getFullYear(), dt.getMonth(), 1);
+                var dateSetTo = (new Date(dt.getFullYear(), (dt.addMonths(1)).getMonth(), 1)).addDays(-1);
+
+                options.$form.find("input[type=text]").val("");
+                options.$form.find("select[multiple]").multiselect("uncheckAll");
+                options.$form.find("input[type=checkbox]").attr('checked', true);
+                options.$form.find("select").val(0);
+                options.$periodFrom.datepicker("setDate", dateSetFrom).trigger("change");
+                options.$periodTo.datepicker("setDate", dateSetTo).trigger("change");
+
+                resetDlls();
+                //$(".date-picker").focusout();
+            };
+            if (action === "exportToExcelPendingReport") {
+                exportToExcel();
+            }
+        };
+
+        options.ddls.$ddlRegion1.change(function () {
+            updateChildRegions(options.ddls.$ddlRegion1.val(), options.ddls.$ddlRegion2, 3, options.ddls.$ddlRegion3, 4);
+        });
+        options.ddls.$ddlRegion2.change(function () {
+            updateChildRegions(options.ddls.$ddlRegion2.val(), options.ddls.$ddlRegion3, 4);
+        });
+
+        options.ddls.$ddlBrands
+            .multiselect({
+                close: function () {
+                    updateDlls(options.ddls.$ddlBrands, 5);
+                }
+            });
+        options.ddls.$ddlSlms
+            .multiselect({
+                close: function () {
+                    updateDlls(options.ddls.$ddlSlms, 4);
+                }
+            });
+        options.ddls.$ddlFlms
+            .multiselect({
+                close: function () {
+                    updateDlls(options.ddls.$ddlFlms, 3);
+                }
+            });
+        options.ddls.$ddlTeams
+            .multiselect({
+                close: function () {
+                    updateDlls(options.ddls.$ddlTeams, 2);
+                }
+            });
+        options.ddls.$ddlMrs
+            .multiselect({
+                close: function () {
+                    updateDlls(options.ddls.$ddlMrs, 1);
+                }
+            });
+    };
+
+    var search = function () {
+        options.searchBase.search();
+    }
+
+    return {
+        init: init,
+        events: {
+            search: search
+        }
+    };
+}($);

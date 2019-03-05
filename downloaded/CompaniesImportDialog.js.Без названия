@@ -1,0 +1,201 @@
+﻿var CompaniesImportDialog = function ($, _) {
+    var options = {
+        $dialog: null,
+        addExperience: null,
+        parsed: {
+            $grid: null,
+            $count: null,
+            data: []
+        },
+        notParsed: {
+            $grid: null,
+            $count: null,
+            $foreignCount: null,
+            data: []
+        },
+        ddlUrls: {
+            getCompany: null,
+            getCompanyName: null,
+            getCategory: null,
+            getPharmacyChain: null,
+            getPharmacyBrand: null
+        },
+        findCompaniesUrl: null,
+        getCompany: null,
+        getCompaniesByPharmacyChainIdUrl: null,
+        exportDataUrl: null,
+        pharmacyChainId: null,
+        isModified: null
+    };
+
+    var away = function () {
+        if (options.isModified) {
+            return "Вы действительно хотите перейти на другую страницу без сохранения изменений?";
+        }
+        return null;
+    }
+
+    var modified = function () {
+        options.isModified = true;
+    }
+
+    var clearModify = function () {
+        options.isModified = null;
+    }
+
+    var initGrids = function () {
+        options.parsed.saveListData = function (data) {
+            options.parsed.data = data;
+        };
+        options.parsed.getListData = function () {
+            return options.parsed.data;
+        };
+        options.notParsed.saveListData = function (data) {
+            options.notParsed.data = data;
+        };
+        options.notParsed.getListData = function () {
+            return options.notParsed.data;
+        };
+        options.parsed.modified = modified;
+        options.notParsed.modified = modified;
+
+        _List.initGrid(options.parsed);
+        _List.initGrid(options.notParsed, options.exportDataUrl, null, options.pharmacyChainId);
+    };
+
+    var refreshGrids = function () {
+        _List.refreshGrid(options.parsed);
+        _List.refreshGrid(options.notParsed);
+    }
+
+    var save = function () {
+        options.onSuccess(options.parsed.data);
+    };
+
+    var initDialog = function () {
+        options.$dialog.dialog({
+            modal: true,
+            autoOpen: false,
+            width: "1000px",
+            title: "Импорт из Excel",
+            open: function () {
+                options.$dialog.css("overflow", "hidden"); //this line does the actual hiding
+            },
+            buttons: {
+                "Выбрать": function () {
+                    save();
+                    $(this).dialog("close");
+                },
+                "Отмена": function () {
+                    _List.clearGrid(options.parsed.$grid[0].id);
+                    _List.clearGrid(options.notParsed.$grid[0].id);
+                    $(this).dialog("close");
+                }
+            }
+        });
+    };
+
+    var pharmacyChainRenew = function (pharmacyChainId) {
+        ParseCompanyDialog.methods.pharmacyChainRenew(pharmacyChainId);
+    }
+
+    var initParseCompanyDialog = function () {
+        ParseCompanyDialog.init({
+            $dialog: $("#ParseCompanyDialog"),
+            $notParsedCompanyName: $("#NotParsedCompanyName"),
+            $fullCompany: $("#FullCompany"),
+            $companyName: $("#CompanyName"),
+            $pharmacyChainCategory: $("#PharmacyChainCategory"),
+            $pharmacyChainName: $("#PharmacyChainName"),
+            $region1: $("#AddressRegion1"),
+            $region2: $("#AddressRegion2"),
+            $region3: $("#AddressRegion3"),
+            $address: $("#AddressFullName"),
+            $index: $("#AddressIndex"),
+            $pharmacyBrand: $("#PharmacyBrand"),
+            list: options,
+            ddlUrls: options.ddlUrls,
+            findCompaniesUrl: options.findCompaniesUrl,
+            getCompany: options.getCompany,
+            getCompaniesByPharmacyChainIdUrl: options.findCompaniesUrl,
+            addExperience: options.addExperience
+        });
+    }
+
+    var initMoveCompanyDialog = function () {
+        MoveCompanyDialog.init({
+            $dialog: $("#MoveCompanyDialog"),
+            $notParsedCompanyName: $("#NotParsedCompanyName"),
+            $notParsedCompanyPharmacyChainName: $("#NotParsedCompanyPharmacyChainName"),
+            getCompany: options.getCompany,
+            list: options
+        });
+    }
+
+    var getCurrentListNumber = function () {
+        return null;
+    };
+
+    var init = function (o) {
+        $.extend(options, o);
+
+        options.$dialog = $('[data-x=CompaniesImportDialog]');
+        options.parsed = {
+            $grid: options.$dialog.find('#ParsedList_Grid'),
+            $count: options.$dialog.find('#spanParsedListCount'),
+            data: [],
+            getCurrentListNumber: getCurrentListNumber
+        };
+        options.notParsed = {
+            $grid: options.$dialog.find('#NotParsedList_Grid'),
+            $count: options.$dialog.find('#spanNotParsedListCount'),
+            $foreignCount: options.$dialog.find('#spanForeignListCount'),
+            data: [],
+            getCurrentListNumber: getCurrentListNumber
+        };
+
+        initDialog();
+        initGrids();
+        initParseCompanyDialog();
+        initMoveCompanyDialog();
+    };
+
+    var show = function (onSuccess) {
+        options.onSuccess = onSuccess;
+        options.$dialog.dialog("open");
+    };
+
+    var close = function () {
+        options.$dialog.dialog("close");
+    };
+
+    var bind = function (data) {
+        if (data.Error) {
+            alert('Не удалось загрузить данные');
+        } else {
+            if (options.pharmacyChainId) {
+                _List.addDataToGrid(options.parsed, data.Data.ParsedLists, true);
+                _List.addDataToGrid(options.notParsed, data.Data.NotParsedLists, true);
+            } else {
+                _List.addDataToGrid(options.parsed, data.Data.ParsedLists);
+                _List.addDataToGrid(options.notParsed, data.Data.NotParsedLists);
+            }
+
+            refreshGrids();
+        }
+    };
+
+    return {
+        init: init,
+        show: show,
+        close: close,
+        bind: bind,
+        methods: {
+            pharmacyChainRenew: pharmacyChainRenew
+        },
+        events: {
+            away: away,
+            clearModify: clearModify
+        }
+    };
+}($, _);

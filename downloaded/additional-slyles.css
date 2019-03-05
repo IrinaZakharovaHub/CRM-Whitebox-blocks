@@ -1,0 +1,214 @@
+.col-flex {
+  display: flex;
+  clear: both;
+}
+.block-user {
+  display: flex;
+  padding: 20px 23px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+.block-user__row {
+  display: flex;
+  line-height: 34px;
+  margin: 10px 0;
+  align-items: flex-start;
+}
+.block-user__name {
+  line-height: normal;
+}
+.block-user__name--short-length {
+  min-width: 50px;
+}
+.block-user__name--long-length {
+  min-width: 120px;
+}
+.block-user__photo {
+  background: transparent;
+  outline: none;
+  padding: 0px 13px;
+  border: 1px solid #522583;
+  border-radius: 3px;
+  color: #522583;
+  font-size: .75em;
+}
+.block-user__photo:active {
+  background: #d1c8de;
+}
+.block-user__select {
+  background: #d1baef;
+  outline: none;
+  border: none;
+  padding: 3px;
+  height: 22px;
+  width: 49px;
+  margin-top: -3px;
+}
+.block-user__select:hover {
+  border: 1px solid grey;
+}
+.block-user__flex:nth-child(2) {
+  margin-left: 20px;
+}
+.block-user__flex--photo {
+  margin-bottom: 50px;
+}
+.block-user__value {
+  font-size: 0.75rem;
+  line-height: normal;
+}
+.block-defection {
+  padding: 20px 23px;
+  border-radius: 6px;
+  margin-top: 15px;
+  border-top: 2px solid #bb9ddb;
+}
+.block-defection__row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: .8em;
+}
+.block-defection__header {
+  font-size: 1rem;
+  font-family: HelvetB, sans-serif;
+  color: #522583;
+  text-transform: uppercase;
+}
+.block-defection__excel {
+  position: absolute;
+  left: 14em;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  outline: none;
+  padding: 7px 10px;
+  top: -0.7em;
+  border: 1px solid #522583;
+  border-radius: 3px;
+}
+.block-defection__excel:active {
+  background: #d1c8de;
+}
+.block-defection__excel .excel-image {
+  width: 20px;
+  height: 15px;
+  background: url(../img/excel.png) no-repeat;
+  background-size: contain;
+}
+.block-defection__excel .excel-name {
+  margin-left: 10px;
+  color: #522583;
+}
+.block-defection__option {
+  position: relative;
+  width: 32%;
+  display: flex;
+  justify-content: flex-end;
+}
+.block-defection__select {
+  background: #d1baef;
+  outline: none;
+  border: none;
+  padding: 3px;
+  width: calc(100% - 5px);
+  height: 22px;
+}
+.block-defection__select option:disabled {
+  color: transparent;
+}
+.block-defection__select:hover {
+  border: 1px solid grey;
+}
+.block-defection__table--row {
+  display: flex;
+  align-items: center;
+  padding-left: 5px;
+}
+.block-defection__table--row-wrapper {
+  border-bottom: 1px solid #ececec;
+}
+.block-defection__table--cell {
+  padding: 10px 3px;
+  font-size: .75rem;
+}
+.block-defection__table--cell.cell-name {
+  width: 25%;
+  border-right: 1px solid #cdcdcd;
+}
+.block-defection__table--cell.cell-availability {
+  width: 25%;
+  border-right: 1px solid #cdcdcd;
+}
+.block-defection__table--cell.cell-fact {
+  width: 18%;
+  border-right: 1px solid #cdcdcd;
+}
+.block-defection__table--cell.cell-status {
+  width: 32%;
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 0;
+}
+.block-defection__table--cell.cell-comment {
+  color: #522583;
+}
+.block-defection__table--cell.cell-comment select {
+  background: transparent;
+  width: 200px;
+}
+.block-defection__table--head {
+  background: #522583;
+  color: #fff;
+}
+.block-defection__table--head .cell-status {
+  justify-content: flex-start;
+  padding-left: 3px;
+}
+.block-history {
+  margin-top: 15px;
+  border-top: 2px solid #bb9ddb;
+  padding: 20px 23px;
+  border-radius: 6px;
+}
+.block-history__row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1em;
+}
+.block-history__header {
+  font-size: 1rem;
+  font-family: HelvetB, sans-serif;
+  color: #522583;
+  text-transform: uppercase;
+}
+.block-history__table--row {
+  display: flex;
+  padding-left: 5px;
+  border-bottom: 1px solid #ececec;
+}
+.block-history__table--cell {
+  padding: 10px 3px;
+  font-size: .75rem;
+  width: 33.33333%;
+}
+.block-history__table--cell:not(:last-child) {
+  border-right: 1px solid #cdcdcd;
+}
+.block-history__table--head {
+  background: #522583;
+  color: #fff;
+}
+.block-history__table--head .cell-status {
+  justify-content: flex-start;
+}
+.block-history__table--head .block-history__table--cell {
+  border-bottom: none;
+}
+@media only screen and (max-width: 1280px) {
+  .user-info__name {
+    line-height: normal;
+  }
+}
+/*# sourceMappingURL=additional-slyles.css.map */

@@ -1,0 +1,239 @@
+@select: #d1c8de;
+
+
+.col-flex {
+  display: flex;
+  clear: both;
+}
+.block-user {
+  display: flex;
+  padding: 20px 23px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  &__row {
+    display: flex;
+    line-height: 34px;
+    margin: 10px 0;
+    align-items: flex-start;
+  }
+  &__name {
+    line-height: normal;
+    &--short-length {
+      min-width: 50px;
+    }
+    &--long-length {
+      min-width: 120px;
+    }
+  }
+  &__photo {
+    background: transparent;
+    outline: none;
+    padding: 0px 13px;
+    border: 1px solid #522583;
+    border-radius: 3px;
+    color: #522583;
+    font-size: .75em;
+    &:active {
+      background: @select;
+    }
+  }
+  &__select {
+    background: #d1baef;
+    outline: none;
+    border: none;
+    padding: 3px;
+    height: 22px;
+    width: 49px;
+    margin-top: -3px;
+    &:hover {
+      border: 1px solid grey;
+    }
+  }
+  &__flex {
+    &:nth-child(2) {
+      margin-left: 20px;
+    }
+    &--photo {
+      margin-bottom: 50px;
+    }
+  }
+  &__value {
+    font-size: 0.75rem;
+    line-height: normal;
+    //opacity: 1;
+  }
+}
+.block-defection {
+  padding: 20px 23px;
+  border-radius: 6px;
+  margin-top: 15px;
+  border-top: 2px solid #bb9ddb;
+  &__row {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: .8em;
+
+  }
+  &__header {
+    font-size: 1rem;
+    font-family: HelvetB, sans-serif;
+    color: #522583;
+    text-transform: uppercase;
+  }
+  &__excel {
+    position: absolute;
+    left: 14em;
+    display: flex;
+    align-items: center;
+    background: transparent;
+    outline: none;
+    padding: 7px 10px;
+    top: -0.7em;
+    border: 1px solid #522583;
+    border-radius: 3px;
+    &:active {
+      background: @select;
+    }
+    .excel-image {
+      width: 20px;
+      height: 15px;
+      background: url(../img/excel.png) no-repeat;
+      background-size: contain;
+    }
+    .excel-name {
+      margin-left: 10px;
+      color: #522583;
+    }
+
+  }
+  &__option {
+    position: relative;
+    width: 32%;
+    display: flex;
+    justify-content: flex-end;
+  }
+  &__select {
+    background: #d1baef;
+    outline: none;
+    border: none;
+    padding: 3px;
+    width: calc(100% - 5px);
+    height: 22px;
+    option:disabled {
+      color: transparent;
+    }
+    &:hover {
+      border: 1px solid grey;
+    }
+  }
+  &__table {
+
+    &--row {
+      display: flex;
+      align-items: center;
+      //justify-content: space-between;
+      padding-left: 5px;
+    }
+    &--row-wrapper {
+      border-bottom: 1px solid #ececec;
+    }
+    &--cell {
+      padding: 10px 3px;
+      font-size: .75rem;
+
+      &.cell-name {
+        width: 25%;
+        border-right: 1px solid #cdcdcd;
+      }
+      &.cell-availability {
+        width: 25%;
+        border-right: 1px solid #cdcdcd;
+      }
+      &.cell-fact {
+        width: 18%;
+        border-right: 1px solid #cdcdcd;
+      }
+      &.cell-status {
+        width: 32%;
+        display: flex;
+        justify-content: flex-end;
+        padding: 10px 0;
+      }
+      &.cell-comment {
+        color: #522583;
+        select {
+          background: transparent;
+          width: 200px;
+        }
+      }
+    }
+    &--head {
+      background: #522583;
+      color: #fff;
+      .cell-status {
+        justify-content: flex-start;
+        padding-left: 3px;
+      }
+    }
+  }
+}
+.block-history {
+  //margin-left: 15px;
+  //margin-right: 15px;
+  margin-top: 15px;
+  border-top: 2px solid #bb9ddb;
+  padding: 20px 23px;
+  border-radius: 6px;
+  &__row {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1em;
+
+  }
+  &__header {
+    font-size: 1rem;
+    font-family: HelvetB, sans-serif;
+    color: #522583;
+    text-transform: uppercase;
+  }
+  &__table {
+
+    &--row {
+      display: flex;
+      //justify-content: space-between;
+      padding-left: 5px;
+      border-bottom: 1px solid #ececec;
+    }
+    &--cell {
+      padding: 10px 3px;
+      font-size: .75rem;
+      width: 33.33333%;
+      &:not(:last-child) {
+        border-right: 1px solid #cdcdcd;
+      }
+    }
+    &--head {
+      background: #522583;
+      color: #fff;
+      .cell-status {
+        justify-content: flex-start;
+      }
+      .block-history__table--cell {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+@media only screen and (max-width: 1280px) {
+  .user-info__name {
+    line-height: normal;
+  }
+}
+
+
+
+
+

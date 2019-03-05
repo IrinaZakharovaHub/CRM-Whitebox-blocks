@@ -1,0 +1,138 @@
+﻿var MoveCompanyDialog = function ($) {
+
+    var options = {
+        //UI элементы
+        $dialog: null,
+        $notParsedCompanyName: null,
+        $notParsedCompanyPharmacyChainName: null,
+
+        //Данные из основной страницы с распознанными/нераспознанными компаниями
+        list: {
+            lists: '',
+            parsed: {
+                $grid: null,
+                data: ''
+            },
+            notParsed: {
+                $grid: null,
+                data: ''
+            }
+        },
+        //Не распознанная строка, которую пытаемся корректировать
+        notParsedLine: null,
+        getCompany: null,
+        refreshGridFunction: null,
+        modified: null
+    };
+
+    var getDescriptionUnParsedData = function (notParsedLine) {
+        if (!!notParsedLine == false) {
+            return '';
+        }
+
+        var resDescription = [];
+        resDescription[resDescription.length] = notParsedLine.PharmacyName;
+        resDescription[resDescription.length] = notParsedLine.AddressFullName;
+        resDescription[resDescription.length] = notParsedLine.Category;
+        resDescription[resDescription.length] = notParsedLine.BrandName;
+
+        resDescription = resDescription.filter(function (value) {
+            return !!value;
+        });
+
+        resDescription = resDescription.join(',');
+        return resDescription;
+    };
+
+    var openDialog = function (notParsedLine, refreshGridFunction) {
+        options.notParsedLine = notParsedLine;
+        options.refreshGridFunction = refreshGridFunction;
+        options.$dialog.dialog("open");
+        options.$notParsedCompanyName.text(getDescriptionUnParsedData(notParsedLine));
+        options.$notParsedCompanyPharmacyChainName.text(options.notParsedLine.PharmacyChainName);
+    };
+
+
+    var closeDialog = function () {
+        options.$dialog.dialog("close");
+    };
+
+    var getCompany = function (companyId, success) {
+
+        $.ajax({
+            url: options.getCompany,
+            dataType: 'json',
+            data: { id: companyId },
+            success: function (data) {
+                success(data);
+            }
+        });
+    };
+
+    var apply = function () {
+
+        getCompany(options.notParsedLine.CompanyId, function success(data) {
+
+            //Вычисляем все нераспознанные строки соответствующие всем параметрам исходной (редактируемой)
+            var sourceItems = _.filter(options.list.notParsed.data, function (item) {
+                return item.AddressFullName.replace(/\s/g, '') === options.notParsedLine.AddressFullName.replace(/\s/g, '') &&
+                    item.BrandName === options.notParsedLine.BrandName &&
+                    item.Category === options.notParsedLine.Category &&
+                    item.PharmacyName === options.notParsedLine.PharmacyName;
+            });
+
+            //Переносим элементы из нераспознанных в распознанные
+            sourceItems.forEach(function (item) {
+                var row = Object.assign({}, data);
+                row.ListNumber = item.ListNumber;
+                row.Category = item.Category;
+                row.BrandName = item.BrandName;
+                row.InvalidProperties = "";
+                row.PharmacyChainName = "";
+                row.Guid = item.Guid;
+                //Заносим нераспознанные строки в списки распознанных
+                options.list.parsed.data.push(row);
+                //Удаляем строки из грида не распознанных аптек
+                _.remove(options.list.notParsed.data,
+                function (item) {
+                    return item.Guid === row.Guid;
+                });
+            });
+
+            options.refreshGridFunction(options.list.parsed.$grid.attr('id'));
+            
+            options.refreshGridFunction(options.list.notParsed.$grid.attr('id'));
+
+            //Фокусируем следующую строку
+            var rowIndx = options.notParsedLine.rowIndx;
+            options.list.notParsed.$grid.pqGrid("setSelection", { rowIndxPage: rowIndx, focus: true });
+        });
+
+        if (options.modified) {
+            options.modified();
+        }
+        options.$dialog.dialog("close");
+    };
+
+    var init = function (o) {
+        $.extend(options, o);
+        options.$dialog.dialog({
+            modal: true,
+            autoOpen: false,
+            height: 'auto',
+            width: 1000,
+            title: 'Перенос аптеки из другой аптечной сети'
+        });
+    };
+
+    return {
+        init: init,
+        events: {
+            apply: apply,
+
+            openDialog: openDialog,
+            closeDialog: closeDialog
+        }
+    };
+
+}($);

@@ -1,0 +1,208 @@
+﻿.ui-multiselect .ui-icon {
+    margin-top:8px;
+}
+
+button.ui-multiselect.ui-state-default, .ui-selectmenu-button {
+    background: #cebbeb;
+    font-size: 16px;
+    color: #522583;
+}
+
+button.ui-multiselect.ui-state-default span, .ui-selectmenu-button {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.user-info__value input {
+    height: 34px;
+}
+
+.ui-menu, .ui-multiselect-menu, .ui-dialog, .ui-dialog-buttonpane, .ui-datepicker-buttonpane, .ui-datepicker {
+    border: 2px solid #bb9ddb;
+    background: #e6d8ff;
+}
+
+.ui-multiselect-checkboxes li, .ui-menu li {
+    color: #522583;
+}
+.ui-menu-item {
+    margin:3px 0 !important;
+    border: 1px solid #e6d8ff;
+}
+
+.ui-multiselect-checkboxes span{
+    margin-left: 5px;
+}
+
+.ui-widget-header {
+    background:#522583;
+}
+
+.ui-widget-header a {
+    color: #916bc5;
+}
+
+.ui-widget-header a:hover {
+    color: #916bc5;
+}
+
+.ui-widget-header .ui-icon {
+    background-image: url(icons/ui-icons_916bc5_256x240.png);
+}
+
+.ui-dialog-titlebar, .ui-datepicker-title {
+    color: #916bc5;
+}
+
+#dialogShowColumnsTable td {
+    padding: 4px;
+    color: #522583;
+}
+
+.ui-button.ui-state-default {
+    background: #693f9b;
+    color: white;
+}
+
+.jstree-default {
+    background:#e6d8ff !important;
+}
+
+.jstree a {
+    color: #522583 !important;
+}
+
+.pq-grid-footer {
+    color: white;
+}
+
+.pq-grid-footer select, .pq-grid-footer input[type=text]{
+    color: black;
+}
+
+.pq-grid-footer .ui-icon {
+    background-image: url(icons/ui-icons_ffffff_256x240.png);
+}
+
+.pq-grid-title-row {
+    background: #693f9b;
+    color: white;
+}
+
+.ui-dialog {
+    font-size:90%;
+}
+
+.error {
+    color: red;
+}
+
+
+/* selectmenu */
+.ui-selectmenu-menu {
+	padding: 0;
+	margin: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: none;
+}
+.ui-selectmenu-menu .ui-menu {
+	overflow: auto;
+	/* Support: IE7 */
+	overflow-x: hidden;
+	padding-bottom: 1px;
+}
+.ui-selectmenu-menu .ui-menu .ui-selectmenu-optgroup {
+	font-size: 1em;
+	font-weight: bold;
+	line-height: 1.5;
+	padding: 2px 0.4em;
+	margin: 0.5em 0 0 0;
+	height: auto;
+	border: 0;
+}
+.ui-selectmenu-open {
+	display: block;
+}
+.ui-selectmenu-button {
+	display: inline-block;
+	overflow: hidden;
+	position: relative;
+	text-decoration: none;
+	cursor: pointer;
+}
+.ui-selectmenu-button span.ui-icon {
+	right: 0.5em;
+	left: auto;
+	margin-top: -8px;
+	position: absolute;
+	top: 50%;
+}
+.ui-selectmenu-button span.ui-selectmenu-text {
+	text-align: left;
+	padding: 0.4em 2.1em 0.4em 1em;
+	display: block;
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.DataGrid {
+    width: 100%;
+    font-size: 14px;
+    font-size: 0.9rem;
+    font-family: Helvet;   
+    color: rgb(82, 37, 131);
+}
+
+.DataGrid td {
+    padding: 3px 3px;
+    border: 2px solid rgb(82, 37, 131);
+    text-align: center;
+    vertical-align: middle;
+ 
+}
+.DataGrid td a{
+    color: rgb(82, 37, 131);
+}
+.DataGrid td:not(.gridDataRow) {
+       background-color: rgb(206, 187, 235);
+}
+.DataGrid td.holiday {
+    background-color:  rgb(105, 63, 155);
+    color: white;
+}
+.DataGrid td.holiday a{
+    background-color:  rgb(105, 63, 155);
+    color: white;
+}
+
+#MainReportTable tr td.gridDataRow {
+    background-color: #e6d8ff;
+}
+.DataGrid tr td.gridDataRow:first-child {
+    text-align: left;
+}
+
+#gridTable .gridDataRow {
+    white-space: nowrap;
+ 
+}
+
+
+.ui-tabs .ui-tabs-panel /* just in case you want to change the panel */ {
+    background: #e6d8ff;
+}
+
+.ui-tabs .ui-state-active {
+    background: #522583
+}
+
+#tabs .ui-tabs-anchor {
+    width: auto;
+    background: none;
+}
+
+.ui-tabs .ui-icon-close { float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;}

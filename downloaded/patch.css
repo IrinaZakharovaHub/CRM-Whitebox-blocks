@@ -1,0 +1,7 @@
+﻿.ui-dialog {
+    z-index: 1000;
+}
+
+.ui-widget-overlay {
+    position: fixed;
+}

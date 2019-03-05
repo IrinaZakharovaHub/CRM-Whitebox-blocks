@@ -1,0 +1,93 @@
+// Нужен для работы интеллисенса, вся реализации находится js/Views/_common/*.js
+var Rainbow = {
+    spinner: {
+        methods: {
+            initAjax: null,
+            show: null,
+            hide: null
+        }
+    },
+    datapicker: {
+        methods: {
+            init: null
+        }
+    },
+    fileUploadDialog: {
+        methods: {
+            show: null
+        }
+    },
+    fileImportDialog: {
+        methods: {
+            show: null
+        }
+    },
+    notification: {
+        methods: {
+            success: null,
+            error: null
+        }
+    },
+    confirmation: {
+        methods: {
+            show: null
+        }
+    }
+};
+
+if (!Date.prototype.toLocalISOString) {
+    (function () {
+
+        function pad(number) {
+            if (number < 10) {
+                return '0' + number;
+            }
+            return number;
+        }
+
+        Date.prototype.toLocalISOString = function () {
+            return this.getFullYear() +
+              '-' + pad(this.getMonth() + 1) +
+              '-' + pad(this.getDate()) +
+              'T00:00:00';
+        };
+
+    }());
+}
+
+$(document)
+    .ready(function() {
+
+        // $('.input-popup').hide('fast');
+
+        $(".slider_1")
+            .owlCarousel({
+                navigation: true,
+                navigationText: ["&lArr;", "&rArr;"]
+            });
+
+        $(".header-navigation__menu-item a")
+            .click(function(e) {
+                $(this).toggleClass("arrow-trig");
+                $(this).siblings(".header-navigation__submenu").toggleClass("open-sub");
+            });
+
+        $(".ico-close-popup")
+            .click(function(e) {
+                $(this).parent(".input-popup").fadeOut("slow");
+            });
+
+        $(".user-info__value--popup input, .user-info__value--popup .ico.ico-arrow-input")
+            .click(function(e) {
+                $(this).parent().siblings(".input-popup").show("slow");
+            });
+
+    });
+
+
+$("ul#flex-menu")
+    .flexMenu({
+        linkText: "...",
+        linkTextAll: "...",
+        cutoff: 1
+    });

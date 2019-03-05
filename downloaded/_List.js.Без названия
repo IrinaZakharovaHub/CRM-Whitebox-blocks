@@ -1,0 +1,454 @@
+﻿var _List = function ($, _) {
+    var options = {
+        locale: "ru",
+        containers: [],
+        ExportDataUrl: null,
+        $pharmacyChainSelector: null,
+        pharmacyChainId: null,
+        modified: null,
+        saveListData: null,
+        getListData: null,
+        keepUrl: null,
+        refresh: null,
+        remove: null,
+        getData: null
+    };
+
+    var validateData = function (gridData) {
+        $.each(gridData,
+            function (index, dataRow) {
+                var invalidProperties = dataRow.InvalidProperties.split(",");
+                dataRow.pq_cellattr = {};
+
+                $.each(invalidProperties,
+                    function (index, propertyName) {
+                        dataRow.pq_cellattr[propertyName] = { style: "color:red;font-weight:bold;" };
+                    });
+            });
+    };
+
+    var generateUUID = function () {
+        var d = new Date().getTime();
+        if (window.performance && typeof window.performance.now === "function") {
+            d += performance.now(); //use high-precision timer if available
+        }
+        var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = (d + Math.random() * 16) % 16 | 0;
+            d = Math.floor(d / 16);
+            return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        return uuid;
+    };
+    var addManyDialog = function ($grid) {
+        CompaniesSelectDialog.dialog.methods.show(function (selected) {
+
+            var container = getContainer($grid);
+            if (container.getListData) {
+                container.data = container.getListData();
+            }
+            var existsCompanyIds = _.map(container.data,
+                function (value) { return value.CompanyId });
+
+            _.each(selected, function (value) {
+                if (!_.includes(existsCompanyIds, value.Id)) {
+                    container.data.push({
+                        Guid: generateUUID(),
+                        ListNumber: container.getCurrentListNumber(),
+                        CompanyId: value.Id,
+                        PharmacyName: value.Name,
+                        PharmacyChainId: value.PharmacyChainId,
+                        PharmacyChainName: value.PharmacyChainName,
+                        Category: value.PharmacyChainCategory,
+                        AddressFullName: value.AddressFullName,
+                        AddressIndex: value.AddressIndex,
+                        AddressRegion1: value.AddressRegion1,
+                        AddressRegion2: value.AddressRegion2,
+                        AddressRegion3: value.AddressRegion3
+                    });
+                }
+            });
+
+            var dataModel = $grid.pqGrid("option", "dataModel");
+            dataModel.data = container.data;
+            dataModel.dataUF = [];
+            $grid.pqGrid("option", "dataModel", dataModel);
+
+            if (container.saveListData) {
+                container.saveListData(container.data);
+            }
+            refresh($grid.attr("id"));
+        });
+    };
+    var getContainerByGridId = function (gridId) {
+        return getContainer($("#" + gridId));
+    };
+
+    var getContainer = function ($grid) {
+        var localContainer = _.find(options.containers, function (item) { return item.$grid[0] === $grid[0] });
+        return localContainer;
+    };
+
+    var exportToExcel = function (localContainer) {
+        var data = $.param({
+            Rows: localContainer.data
+        });
+
+        $.fileDownload(options.ExportDataUrl,
+        {
+            httpMethod: "POST",
+            prepareCallback: function (url) {
+                Rainbow.spinner.methods.show();
+            },
+            successCallback: function () {
+                Rainbow.spinner.methods.hide();
+            },
+            abortCallback: function () {
+                Rainbow.spinner.methods.hide();
+            },
+            failCallback: function () {
+                Rainbow.spinner.methods.hide();
+
+                Rainbow.notification.methods.error("Ошибка экспорта нераспознанных аптек!", "Ошибка выгрузки");
+            },
+            data: data
+        });
+    };
+
+    function getPharmacyChainId() {
+        if (options.$pharmacyChainSelector) {
+            return options.$pharmacyChainSelector.val();
+        }
+        if (options.pharmacyChainId) {
+            return options.pharmacyChainId;
+        }
+        return null;
+    }
+
+    var initGrid = function (container, exportUrl, pharmacyChainSelector, pharmacyChainId) {
+        var localContainer = _.find(options.containers, function (item) { return item.$grid[0] === container.$grid[0] });
+        $.extend(localContainer, container);
+        if (exportUrl) {
+            options.ExportDataUrl = exportUrl;
+        }
+        if (pharmacyChainSelector) {
+            options.$pharmacyChainSelector = pharmacyChainSelector;
+        }
+        if (pharmacyChainId) {
+            options.pharmacyChainId = pharmacyChainId;
+        }
+        if (container.modified) {
+            options.modified = container.modified;
+        }
+
+        validateData(localContainer.data);
+
+        localContainer.$grid.pqGrid({
+            height: 340,
+            collapsible: false,
+            showTitle: false,
+            showBottom: true,
+            selectionModel: { type: "row", mode: "single" },
+            pasteModel: { on: false },
+            wrap: false,
+            hwrap: false,
+            numberCell: { show: false },
+            toolbar: {
+                cls: 'pq-toolbar-search'
+            },
+            title: "",
+            pageModel: {
+                type: "local",
+                rPP: 10,
+                rPPOptions: [10]
+            },
+            dataModel: { data: localContainer.data },
+            colModel: localContainer.columnModel
+        });
+        
+        var pqScrollbar = localContainer.$grid.find("div.pq-sb-vert").pqScrollBar();
+        if (pqScrollbar.length == 1)
+            pqScrollbar.on("pqscrollbardrag", function (event, ui) {
+                var num = $(this).pqScrollBar("option", "num_eles");
+                var step = num === 0 ? 50 : -50;
+                var ratio = step * (ui.ratio == 0 ? 1 : (ui.ratio == 1 ? -1 : 0));
+                window.scrollBy(0, ratio);
+            });
+
+        localContainer.$grid.pqGrid("option", $.paramquery.pqGrid.regional[options.locale]);
+        localContainer.$grid.find(".pq-pager").pqPager("option", $.paramquery.pqPager.regional[options.locale]);
+
+        if (localContainer.isParsed && !localContainer.isReadOnly) {
+            var btnAddCompanies = $('<button class="ui-corner-all  ui-button ui-widget ui-state-default ui-button-text-icon-primary button-grid" role="button" style="float: right;" type="button"></button>');
+            btnAddCompanies.append('<span class="ui-button-icon-primary ui-icon ui-icon-plus"></span><span class="ui-button-text">Добавить несколько</span>');
+
+            var btnImportFromExcelCompanies = $('<button class="ui-corner-all  ui-button ui-widget ui-state-default ui-button-text-icon-primary button-grid" role="button" style="float: right;" type="button"></button>');
+            btnImportFromExcelCompanies.append('<span class="ui-button-icon-primary ui-icon ui-icon-folder-open"></span><span class="ui-button-text">Загрузить из Excel</span>');
+
+            localContainer.$grid.find('.pq-grid-footer.pq-pager').append(btnAddCompanies);
+            localContainer.$grid.find('.pq-grid-footer.pq-pager').append(btnImportFromExcelCompanies);
+
+            btnAddCompanies.on('click', function () { addManyDialog(localContainer.$grid); });
+
+            btnImportFromExcelCompanies.click(function () {
+                Rainbow.fileImportDialog.methods.show({
+                    title: "Загрузка аптек из файла",
+                    type: 2,
+                    urls: {
+                        upload: container.importFromExcelUrl,
+                        refresh: container.refresh,
+                        remove: container.remove,
+                        getData: container.getData
+                    },
+                    events: {
+                        onImport: function (data) {
+                            container.onImportFromExcel(data.Data);
+                        }
+                    }
+                }, getPharmacyChainId());
+            });
+        }
+
+
+        addSearchToolBarToCompaniesGrid(localContainer.$grid);
+
+        if (!localContainer.isParsed && options.ExportDataUrl && options.ExportDataUrl) {
+            // Добавляем кнопку выгрузки в excel для грида с нераспознанными аптеками.
+            var btnExportExcel = $('<button type="button" class="ui-corner-all  ui-button ui-widget ui-state-default ui-button-text-icon-primary" role="button" style="float: right;"><span class="ui-button-icon-primary ui-icon ui-icon-arrowthickstop-1-s"></span><span class="ui-button-text">Экспорт</span></button>');
+            btnExportExcel.on('click', function () { exportToExcel(localContainer) });
+            localContainer.$grid.find('.pq-grid-footer.pq-pager').append(btnExportExcel);
+        }
+    };
+
+    //Добавляет элементы фильтрации в хидер грида аптек
+    var addSearchToolBarToCompaniesGrid = function ($grid) {
+        var gridId = $grid.attr("id");
+
+
+        $grid.find('.pq-toolbar-search.pq-toolbar').append('<label class="filter-grid" >Название аптеки: <input type="text" class="filter-grid-value" data-name="CompanyName"></label>' +
+            '<label class="filter-grid">Адрес аптеки: <input type="text" class="filter-grid-value" data-name="CompanyAddress"></label>' +
+            '<label style="float:right;">' +
+            '<button class="ui-corner-all  ui-button ui-widget ui-state-default ui-button-text-icon-primary button-grid" role="button" type="button" onclick="_List.refreshByGridId(\'' + gridId + '\');"><span class="ui-button-icon-primary ui-icon ui-icon-search"></span><span class="ui-button-text">Применить фильтр</span></button>' +
+            '<button class="ui-corner-all  ui-button ui-widget ui-state-default ui-button-text-only button-grid" role="button" type="button" onclick="_List.clearFilterByGridId(\'' + gridId + '\');"><span class="ui-button-text">Очистить</span></button>' +
+            '</label>');
+
+    };
+    var addGrid = function (container, keepUrl) {
+        if (!_.find(options.containers, function (item) { return item.$grid[0] === container.$grid[0] })) {
+            options.containers.push({
+                $grid: container.$grid,
+                columnModel: container.columnModel,
+                isParsed: container.isParsed
+            });
+        }
+        if (keepUrl) {
+            options.keepUrl = keepUrl;
+        }
+    };
+
+
+    var refreshGrid = function (container) {
+        var listNumber = container.getCurrentListNumber();
+
+
+        var listData = listNumber == null
+            ? container.data
+            : _.filter(container.data, { ListNumber: listNumber });
+
+        container.$grid.pqGrid("option", "dataModel.dataUF", []);
+        container.$grid.pqGrid("option", "dataModel.data", listData);
+
+        container.$grid.pqGrid("filter", {
+            oper: 'replace',
+            data: [
+                { dataIndx: "PharmacyName", condition: "contain", value: container.$grid.find("input[data-name='CompanyName']").val() },
+                { dataIndx: "AddressFullName", condition: "contain", value: container.$grid.find("input[data-name='CompanyAddress']").val() }
+            ]
+        });
+
+        var total = listData.length;
+
+        if (container.$foreignCount) {
+            var foreignCount = _.filter(listData, function (o) {
+                if (o.PharmacyChainId) return o;
+            }).length;
+            container.$foreignCount.html(foreignCount);
+            total -= foreignCount;
+        }
+
+        container.$count.html(total);
+
+        container.$grid.pqGrid("refreshDataAndView");
+    };
+
+    var refresh = function (gridId) {
+        var container = _.find(options.containers, function (item) { return item.$grid.attr("id") === gridId; });
+        if (container.getListData) {
+            container.data = container.getListData();
+        }
+        refreshGrid(container);
+    };
+
+    var clearFilterByGridId = function (gridId) {
+        var container = _.find(options.containers, function (item) { return item.$grid.attr("id") === gridId; });
+        container.$grid.find("input.filter-grid-value").val("");
+        if (container.getListData) {
+            container.data = container.getListData();
+        }
+
+        refreshGrid(container);
+    };
+
+    var removeData = function (container) {
+        var localContainer = _.find(options.containers, function (item) { return item.$grid.attr("id") === container.$grid[0].id; });
+        container.$grid.find("input.filter-grid-value").val("");
+        localContainer.data = [];
+        container.$grid.pqGrid("option", "dataModel.data", localContainer.data);
+        refreshGrid(localContainer);
+    };
+
+    var pharmacyMove = function (gridId, itemGuid, rowIndx) {
+        var dataModel = $("#" + gridId).pqGrid("option", "dataModel");
+        var notParsedLine = _.find(dataModel.data,
+            function (item) {
+                return item.Guid === itemGuid;
+            });
+        notParsedLine.rowIndx = rowIndx;
+        MoveCompanyDialog.events.openDialog(notParsedLine, function (gridId) {
+            refresh(gridId);
+        });
+
+        if (options.modified) {
+            options.modified();
+        }
+    };
+
+    var pharmacyRemove = function (gridId, itemGuid) {
+
+        var container = getContainerByGridId(gridId);
+        if (container.getListData) {
+            container.data = container.getListData();
+        }
+
+        _.remove(container.data,
+            function (item) {
+                return item.Guid === itemGuid;
+            });
+
+
+        var dataModel = container.$grid.pqGrid("option",
+            "dataModel");
+        dataModel.data = container.data;
+        container.$grid.pqGrid("option",
+                    "dataModel", dataModel);
+
+        if (options.modified) {
+            options.modified();
+        }
+
+        if (container.saveListData) {
+            container.saveListData(container.data);
+        }
+        refreshGrid(container);
+
+        $('<div/>').text('Аптека удалена').dialog({
+            modal: true,
+            autoOpen: true,
+            height: 'auto',
+            width: 250,
+            title: 'Аптека удалена',
+            buttons: [
+                {
+                    text: "Ok",
+                    click: function () {
+                        $(this).dialog("close");
+                    }
+                }
+            ]
+        });
+    };
+
+    var clearGrid = function (gridId) {
+
+        var container = getContainerByGridId(gridId);
+        if (container.getListData) {
+            container.data = container.getListData();
+        }
+
+        _.remove(container.data, null);
+
+        var dataModel = container.$grid.pqGrid("option", "dataModel");
+        dataModel.data = container.data;
+        dataModel.dataUF = [];
+        container.$grid.pqGrid("option", "dataModel", dataModel);
+
+        if (options.modified) {
+            options.modified();
+        }
+        refreshGrid(container);
+    };
+
+    var pharmacyFix = function (gridId, itemGuid, rowIndx) {
+        var dataModel = $("#" + gridId).pqGrid("option", "dataModel");
+        var notParsedLine = _.find(dataModel.data,
+            function (item) {
+                return item.Guid === itemGuid;
+            });
+        notParsedLine.rowIndx = rowIndx;
+        ParseCompanyDialog.events.openDialog(notParsedLine, function (gridId) { refresh(gridId) });
+
+        if (options.modified) {
+            options.modified();
+        }
+    };
+
+    var addDataToGrid = function (container, data, withReplace) {
+        validateData(data);
+
+        var localContainer = getContainer(container.$grid);
+
+        localContainer.data = withReplace ? data : _.unionWith(localContainer.data, data, function (main, other) {
+            return (main.CompanyId === other.CompanyId && main.ListNumber === other.ListNumber);
+        });
+
+        if (localContainer.data.length === 0) {
+            if (container.saveListData) {
+                container.saveListData(data);
+            }
+        } else {
+            _.forEach(_.groupBy(localContainer.data, 'ListNumber'), function (data, listIndx) {
+                if (container.saveListData) {
+                    container.saveListData(data, listIndx);
+                }
+            });
+        }
+
+
+        refresh(container.$grid[0].id);
+
+        if (options.modified) {
+            options.modified();
+        }
+    };
+
+    var getDataFromGrid = function (container) {
+        var localContainer = getContainer(container.$grid);
+        return localContainer.data;
+    };
+
+    return {
+        initGrid: initGrid,
+        addGrid: addGrid,
+        addDataToGrid: addDataToGrid,
+        getDataFromGrid: getDataFromGrid,
+        clearGrid: clearGrid,
+        refreshGrid: refreshGrid,
+        refreshByGridId: refresh,
+        clearFilterByGridId: clearFilterByGridId,
+        removeData: removeData,
+        pharmacy: {
+            fix: pharmacyFix,
+            remove: pharmacyRemove,
+            move: pharmacyMove
+        }
+    };
+}($, _);

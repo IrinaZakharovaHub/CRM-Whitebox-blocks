@@ -1,0 +1,113 @@
+﻿var ddlGrid = function ($) {
+
+    var options = {
+        gridId: null,
+        ddlId: null,
+        gridUrl: null
+    };
+
+    var initGrid = function () {
+        var colM = [
+            { title: "ID", dataIndx: "ID", hidden: true, editable: true },
+            { title: "Наименование", dataIndx: "Name", width: '90%', editable: false },
+            {
+                title: "Действие", dataIndx: "Action", width: '10%', editable: false, cls: 'icon_remove',
+                render: function (ui) {
+                    var rowIndx = ui.rowIndx,
+                        grid = this;
+
+                    var template = '<a href="#" onclick="return ddlGrid.events.deleteGridRow(' + rowIndx + ',' + grid.id + ')">Удалить</a>';
+                    return template;
+                }
+            },
+        ];
+
+        $(options.gridId).pqGrid({
+            height: 'flex',
+            collapsible: false,
+            showTitle: false,
+            showBottom: false,
+            numberCell: false,
+            wrap: false, hwrap: false,
+            scrollModel: { horizontal: false },
+            selectionModel: { type: 'row', mode: 'single' },
+            colModel: colM,
+            dataModel: {
+                location: 'remote',
+                dataType: 'JSON',
+                method: 'POST',
+                url: options.gridUrl,
+                sorting: "remote",
+                getData: function (response) {
+                    if (!response.IsError) {
+                        return { data: response.Data.Items };
+                    }
+
+                    return { data: [] };
+                },
+                beforeSend: function (jqXHR, settings) {
+                    settings.data = 'id=' + ($('#PharmacyChain_Id').val() ? $('#PharmacyChain_Id').val() : null );
+                },
+            },
+        });
+
+        var locale = 'ru';
+        $(options.gridId).pqGrid("option", $.paramquery.pqGrid.regional[locale]);
+        $(options.gridId).find(".pq-pager").pqPager("option", $.paramquery.pqPager.regional[locale]);
+
+        $(options.gridId).pqGrid("refresh");
+    }
+
+    //возвращает массив id записей из грида
+    var getGridAddedIds = function () {
+        var gridData = $(options.gridId).pqGrid("option", "dataModel").data;
+        var ids = [];
+        if (gridData) {
+            ids = $.map(gridData, function (item) { return item.Id; });
+        }
+
+        return ids;
+    }
+    //добавляет запись из ddl в грид
+    var addGridRow = function () {
+        //добавляемая строка
+        var row = { Id: $(options.ddlId).val(), Name: $(options.ddlId + ' option:selected').text() };
+        
+        //массив id записей из грида
+        var ids = getGridAddedIds();
+        
+        if (ids.indexOf(row.Id) === -1) {
+            if (row.Id > 0) {
+                $(options.gridId).pqGrid('addRow', {
+                    rowData: row,
+                    checkEditable: false
+                });
+            }
+        } else {
+            alert('Данная сеть уже добавлена к ассоциации. Пожалуйста, выберете другую аптечную сеть');
+        }
+    };
+    //удаляет по номеру строки запись из грида 
+    var deleteGridRow = function (rowIndx, grid) {
+        $(grid).pqGrid("deleteRow", {
+            rowIndx: rowIndx
+        });
+    };
+
+
+    var init = function (o) {
+        $.extend(options, o);
+
+        initGrid();
+    };
+
+    return {
+        init: init,
+        events: {
+            addGridRow: addGridRow,
+            deleteGridRow: deleteGridRow,
+            getGridAddedIds: getGridAddedIds
+        }
+    };
+
+}($);

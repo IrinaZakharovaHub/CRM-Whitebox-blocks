@@ -1,0 +1,24 @@
+﻿Date.prototype.addMonths = function (m) {
+    var result = new Date(this);
+    var years = Math.floor(m / 12);
+    var months = m - (years * 12);
+    if (years) result.setFullYear(result.getFullYear() + years);
+    if (months) result.setMonth(result.getMonth() + months);
+    return result;
+}
+
+Date.prototype.addDays = function (d) {
+    var result = new Date(this);
+    result.setDate(result.getDate() + d);
+    return result;
+}
+
+Date.prototype.toISO = function () {
+    var tem, A = this.toUTCArray(), i = 0;
+    A[1] += 1;
+    while (i++ < 7) {
+        tem = A[i];
+        if (tem < 10) A[i] = '0' + tem;
+    }
+    return A.splice(0, 3).join('-') + 'T' + A.join(':');
+}

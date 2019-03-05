@@ -1,0 +1,8 @@
+﻿(function ($) {
+    $.validator.unobtrusive.adapters.addBool("checkformula");
+
+    $.validator.addMethod("checkformula", function (value, element, param) {
+        
+        return param;
+    });
+}(jQuery));

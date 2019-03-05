@@ -1,0 +1,61 @@
+﻿var Rainbow = (function($, _) {
+
+    var redirectTo = function(redirectUrl) {
+        window.location = redirectUrl;
+    };
+
+    var successMessage = function(message, title, callbackUrl) {
+        var $dialog = $("<div>");
+        $("<span>").text(message).appendTo($dialog);
+
+        $dialog.dialog({
+            title: title,
+            modal: true,
+            resizable: false,
+            buttons: {
+                Ok: function() {
+                    $(this).dialog("close");
+                }
+            },
+            close: function() {
+                if (callbackUrl) {
+                    redirectTo(callbackUrl);
+                }
+                $(this).dialog("destroy");
+            }
+        });
+    };
+
+
+    var errorMessage = function (message, title, action) {
+        var $dialog = $("<div>");
+        $("<span>").text(message).appendTo($dialog);
+
+        $dialog.dialog({
+            title: title,
+            modal: true,
+            resizable: false,
+            buttons: {
+                Ok: function () {
+                    $(this).dialog("close");
+                }
+            },
+            close: function () {
+                if (action) {
+                    action();
+                }
+                $(this).dialog("destroy");
+            }
+        });
+    };
+
+    return _.assignIn(Rainbow,
+    {
+        notification: {
+            methods: {
+                success: successMessage,
+                error: errorMessage
+            }
+        }
+    });
+})($, _, Rainbow || {});

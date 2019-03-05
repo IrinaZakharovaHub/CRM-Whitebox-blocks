@@ -1,0 +1,25 @@
+// Localization grid data
+
+jQuery.paramquery.pqGrid.regional['ru'] = {
+strAdd: "Добавить",
+strDelete: "Удалить",
+strEdit: "Редактировать",
+strLoading: "Загрузка",
+strNextResult: "След. результат",
+strNoRows: "Нет строк для отображения.",
+strNothingFound: "Ничего не найдено",
+strPrevResult: "Пред. результат",
+strSearch: "Поиcк",
+strSelectedmatches: "Selected {0} of {1} match(es)"
+};
+
+jQuery.paramquery.pqPager.regional['ru'] = {
+strDisplay: "Показано от {0} до {1} из {2} элементов.",
+strFirstPage: "Первая страница",
+strLastPage: "Последняя страница",
+strNextPage: "След. страница",
+strPage: "Страница {0} из {1}",
+strPrevPage: "Пред. страница",
+strRefresh: "Обновить",
+strRpp: "Строк на странице: {0}"
+};

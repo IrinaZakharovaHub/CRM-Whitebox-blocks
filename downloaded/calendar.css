@@ -1,0 +1,164 @@
+﻿.fc-day {
+    background-color:white;
+    border:1px solid rgb(187, 156, 219);
+}
+
+.fc-grid .fc-day-number {
+    padding: 0;
+    text-align: center;
+}
+
+.fc-day-number {
+    color: rgb(82, 37, 131);
+    border-radius: 10px;
+    border: 3px solid;
+    border-color: rgba(255,255,255,0);
+    width: 20px;
+    height: 20px;
+    margin-top: 4px;
+    margin-right: 4px;
+}
+
+.fc-today .fc-day-number {
+    background-color: rgb(240, 82, 76);
+    color: white;
+    border-radius: 50%;
+    margin: 4px 4px 0 2px;
+    width: 26px;
+    height: 26px;
+    line-height: 20px;
+}
+
+.holiday {
+    background-color: rgb(230, 215, 255);
+}
+
+th.fc-day-header {
+    border:0;
+    border-bottom:1px solid rgb(187, 156, 219);
+    background-color:white;
+    text-align:right;
+    padding:5px;
+}
+
+.fc-header .fc-button, .fc-header .fc-button.fc-state-hover {
+    margin-bottom:0px;
+    background-color: rgb(230, 216, 255);
+    background-image:none;
+    border: none;
+
+    box-shadow: none;
+}
+
+
+.fc-header .fc-header-right .fc-button.fc-state-default {
+    border-bottom:none; 
+    border-radius:0;
+    
+}
+
+.fc-header .fc-header-right  .fc-button.fc-state-active {
+    border-top:1px solid rgb(187, 156, 219);
+    border-right:1px solid rgb(187, 156, 219);
+    border-left:1px solid rgb(187, 156, 219);
+    border-bottom: 1px solid rgba(255,255,255,0);
+    background-color:white;
+    border-radius:0;
+    
+}
+
+.fc-agenda-days {
+    background-color:white;
+}
+
+.fc-agenda-days .fc-state-highlight {
+    background-color:white;
+    border-color: rgb(240, 82, 76);
+}
+
+
+.fc-agenda-days thead th {
+    border:none;
+    border-bottom:1px solid rgb(187, 156, 219);
+    text-align:center;
+    padding:5px;
+}
+
+.fc-border-separate thead tr th:first-child {
+    border-left:1px solid rgb(187, 156, 219);
+}
+
+.fc-border-separate thead tr th:last-child {
+    border-right:1px solid rgb(187, 156, 219);
+}
+
+.fc-event.completed {
+    color: black;
+    border-color: #9FC6F7;
+    background-color: #9FC6F7;
+}
+
+.fc-event.prepared {
+    color: black;
+    border-color: #FFFF00;
+    background-color: #FFFF00;
+}
+
+.fc-event.notcompleted {
+    color: black;
+    border-color: #C0C0C0;
+    background-color: #C0C0C0;
+}
+.fc-event.notworking {
+    color: black;
+    border-color: lightgreen;
+    background-color: lightgreen;
+}
+
+.fc-event.fc-clip-text .fc-event-title {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.fc-event.fc-wrap-text .fc-event-title {
+    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: hidden;
+}
+
+.fc-agenda-slots tr .fc-agenda-axis {
+    color: white;
+}
+
+.fc-agenda-slots tr:nth-child(3n+1) .fc-agenda-axis {
+    color: black;
+}
+.own-fc-day-number {
+    float: left !important;   
+}
+.roundedStat {
+    border-radius:9px;
+    border:3px solid;
+    border-color:rgba(255,255,255,0);
+    width:18px;
+    height:18px;
+    margin-top:4px;
+    margin-right:1px;
+    float: right;
+    text-align: center;
+    font-size: 12px;
+}
+.planCount {
+    background-color: lightgrey;
+}
+.preparedCount {
+    background-color: yellow;
+}
+.completeCount {
+    background-color: lightblue;
+}
+.isNotWorkingExists {
+    background-color: lightgreen;
+}
+
