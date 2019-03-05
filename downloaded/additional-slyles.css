@@ -155,7 +155,7 @@
 }
 .block-defection__table--cell.cell-comment select {
   background: transparent;
-  width: 200px;
+  width: 14rem;
 }
 .block-defection__table--head {
   background: #522583;
@@ -205,6 +205,15 @@
 }
 .block-history__table--head .block-history__table--cell {
   border-bottom: none;
+}
+.yellow {
+  background: #ffd300;
+}
+.green {
+  background: #00c28f;
+}
+.blue {
+  background: #00c8f6;
 }
 @media only screen and (max-width: 1280px) {
   .user-info__name {
