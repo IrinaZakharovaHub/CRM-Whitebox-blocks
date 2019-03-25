@@ -158,6 +158,7 @@
   width: 14rem;
 }
 .block-defection__table--head {
+  max-height: 30.4px;
   background: #522583;
   color: #fff;
 }
