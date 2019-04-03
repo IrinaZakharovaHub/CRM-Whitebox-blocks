@@ -38,11 +38,13 @@
 .block-user__select {
   background: #d1baef;
   outline: none;
-  border: none;
+  border: 1px solid transparent;
   padding: 3px;
-  height: 22px;
+  height: 24px;
   width: 49px;
   margin-top: -3px;
+  overflow: visible;
+  box-sizing: border-box;
 }
 .block-user__select:hover {
   border: 1px solid grey;
@@ -108,14 +110,19 @@
 }
 .block-defection__select {
   background: #d1baef;
-  outline: none;
-  border: none;
   padding: 3px;
   width: calc(100% - 5px);
-  height: 22px;
+  outline: none;
+  border: 1px solid transparent;
+  height: 24px;
+  margin-top: -3px;
+  overflow: visible;
+  box-sizing: border-box;
+  font-family: Helvet, sans-serif;
+  color: #522583;
 }
-.block-defection__select option:disabled {
-  color: transparent;
+.block-defection__select option {
+  background: #fff;
 }
 .block-defection__select:hover {
   border: 1px solid grey;
