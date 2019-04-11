@@ -14,7 +14,7 @@
     display: flex;
     line-height: 34px;
     margin: 10px 0;
-    align-items: flex-start;
+    align-items: center;
   }
   &__name {
     line-height: normal;
@@ -62,7 +62,22 @@
   &__value {
     font-size: 0.75rem;
     line-height: normal;
+    align-self: flex-start;
     //opacity: 1;
+  }
+  &__created {
+    line-height: 1.5;
+    font-size: .75rem;
+    color: #522583;
+    opacity: .8;
+    a {
+      color: #522583;
+      text-decoration: underline;
+      &:visited, &:active {
+        color: #522583;
+        text-decoration: underline;
+      }
+    }
   }
 }
 .block-defection {
@@ -245,6 +260,22 @@
 }
 .blue {
   background: #00c8f6;
+}
+.bubble-red {
+  background: #ecbdbd;
+  line-height: 1;
+  padding: 4px;
+  color: #6f2021;
+  border-radius: 2px;
+  margin-left: 5px;
+}
+.bubble-green {
+  background: #b8e9c0;
+  line-height: 1;
+  padding: 4px;
+  color: #10421e;
+  border-radius: 2px;
+  margin-left: 5px;
 }
 @media only screen and (max-width: 1280px) {
   .user-info__name {
