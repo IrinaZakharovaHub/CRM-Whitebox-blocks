@@ -142,6 +142,7 @@
     box-sizing: border-box;
     font-family: Helvet, sans-serif;
     color: #522583;
+    align-self: flex-end;
     option {
       background: #fff;
       &:disabled {
@@ -182,7 +183,7 @@
       &.cell-status {
         width: 32%;
         display: flex;
-        justify-content: flex-end;
+        flex-flow: column nowrap;
         padding: 10px 0;
       }
       &.cell-comment {
